@@ -40,30 +40,19 @@
 
 import os
 from dotenv import load_dotenv
-from src.vectorstore import FaissVectorStore
+from src.vectorstore import PgVectorStore
 from langchain_groq import ChatGroq
 from typing import List, Dict
 
 load_dotenv()
 
 class RAGSearch:
-    def __init__(self, persist_dir: str = "faiss_store", 
+    def __init__(self, 
                  embedding_model: str = "all-mpnet-base-v2", 
                  llm_model: str = "llama-3.3-70b-versatile",
                  use_query_expansion: bool = True):
         
-        self.vectorstore = FaissVectorStore(persist_dir, embedding_model, use_reranker=True)
-        
-        # Load or build vectorstore
-        faiss_path = os.path.join(persist_dir, "faiss.index")
-        meta_path = os.path.join(persist_dir, "metadata.pkl")
-        
-        if not (os.path.exists(faiss_path) and os.path.exists(meta_path)):
-            from .data_loader import load_all_documents
-            docs = load_all_documents("data")
-            self.vectorstore.build_from_documents(docs)
-        else:
-            self.vectorstore.load()
+        self.vectorstore = PgVectorStore(embedding_model=embedding_model, use_reranker=True)
         
         groq_api_key = os.getenv("GROQ_API_KEY")
         self.llm = ChatGroq(groq_api_key=groq_api_key, model_name=llm_model, temperature=0.1)
@@ -160,9 +149,16 @@ Alternative questions (one per line):"""
         """
         return self.vectorstore.query(query, top_k=top_k, initial_k=top_k*4)
 
+    def get_stats(self) -> Dict:
+        """Get statistics about the knowledge base"""
+        return self.vectorstore.get_stats()
+
+
 # Example usage
 if __name__ == "__main__":
     rag_search = RAGSearch()
+    
+    print("Knowledge base stats:", rag_search.get_stats())
     
     query = "Tell me how to derive the Poisson loss function, tell me the steps in easy and concise words"
     summary = rag_search.search_and_summarize(query, top_k=5)

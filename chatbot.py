@@ -57,9 +57,8 @@
 
 import streamlit as st
 from src.search import RAGSearch
-from src.vectorstore import FaissVectorStore
+from src.vectorstore import PgVectorStore
 from src.data_loader import load_all_documents
-import os
 
 # Page config
 st.set_page_config(
@@ -75,14 +74,17 @@ def load_rag():
     return RAGSearch(use_query_expansion=True)
 
 @st.cache_resource
-def check_and_build_kb():
-    """Check if knowledge base exists, if not show build option"""
-    faiss_path = os.path.join("faiss_store", "faiss.index")
-    meta_path = os.path.join("faiss_store", "metadata.pkl")
-    return os.path.exists(faiss_path) and os.path.exists(meta_path)
+def check_kb_exists():
+    """Check if knowledge base has data"""
+    try:
+        store = PgVectorStore()
+        stats = store.get_stats()
+        return stats['total_chunks'] > 0, stats
+    except:
+        return False, None
 
 # Check if KB exists
-kb_exists = check_and_build_kb()
+kb_exists, kb_stats = check_kb_exists()
 
 # Title
 st.title("💬 Knoccs Knowledge Base Chatbot")
@@ -95,9 +97,9 @@ with st.sidebar:
     # Top-k slider for result count
     top_k = st.slider(
         "Number of documents to retrieve",
-        min_value=2,
-        max_value=8,
-        value=4,
+        min_value=8,
+        max_value=20,
+        value=10,
         help="More documents = more context but potentially more repetition"
     )
     
@@ -124,6 +126,7 @@ with st.sidebar:
     - 🎯 Cross-encoder reranking
     - 🔄 Query expansion
     - 🤖 Llama 3.3 70B via Groq
+    - 🐘 PostgreSQL + pgvector
     """)
     
     st.divider()
@@ -131,14 +134,16 @@ with st.sidebar:
     # Knowledge base management
     st.header("🛠️ Knowledge Base")
     
-    if kb_exists:
+    if kb_exists and kb_stats:
         st.success("✅ Knowledge base loaded")
+        st.metric("Total Chunks", f"{kb_stats['total_chunks']:,}")
+        st.metric("Total Sources", kb_stats['total_sources'])
         
         if st.button("🔄 Rebuild Knowledge Base", help="Rebuild from data/ folder"):
             with st.spinner("Rebuilding knowledge base..."):
                 try:
                     docs = load_all_documents("data")
-                    store = FaissVectorStore("faiss_store", chunk_size=512, chunk_overlap=128, use_reranker=True)
+                    store = PgVectorStore(chunk_size=512, chunk_overlap=128, use_reranker=True)
                     store.build_from_documents(docs)
                     st.success("Knowledge base rebuilt successfully!")
                     st.cache_resource.clear()
@@ -146,7 +151,7 @@ with st.sidebar:
                 except Exception as e:
                     st.error(f"Error rebuilding: {str(e)}")
     else:
-        st.warning("⚠️ Knowledge base not found")
+        st.warning("⚠️ Knowledge base is empty or not initialized")
         
         if st.button("🏗️ Build Knowledge Base", help="Build from data/ folder"):
             with st.spinner("Building knowledge base... This may take a few minutes."):
@@ -155,13 +160,16 @@ with st.sidebar:
                     if not docs:
                         st.error("No documents found in data/ folder!")
                     else:
-                        store = FaissVectorStore("faiss_store", chunk_size=512, chunk_overlap=128, use_reranker=True)
+                        store = PgVectorStore(chunk_size=512, chunk_overlap=128, use_reranker=True)
                         store.build_from_documents(docs)
-                        st.success(f"Knowledge base built with {len(docs)} documents!")
+                        stats = store.get_stats()
+                        st.success(f"Knowledge base built with {stats['total_chunks']:,} chunks from {stats['total_sources']} sources!")
                         st.cache_resource.clear()
                         st.rerun()
                 except Exception as e:
                     st.error(f"Error building: {str(e)}")
+                    if "connection" in str(e).lower():
+                        st.error("Make sure PostgreSQL is running and pgvector extension is installed!")
     
     st.divider()
     
@@ -172,6 +180,7 @@ with st.sidebar:
 # Main chat interface
 if not kb_exists:
     st.error("⚠️ Please build the knowledge base first using the sidebar button.")
+    st.info("Make sure PostgreSQL is running with pgvector extension installed.")
     st.stop()
 
 # Load RAG search
@@ -179,6 +188,8 @@ try:
     rag_search = load_rag()
 except Exception as e:
     st.error(f"Error loading RAG system: {str(e)}")
+    if "connection" in str(e).lower():
+        st.error("Cannot connect to PostgreSQL. Please check your database connection.")
     st.stop()
 
 # Initialize chat history
@@ -232,4 +243,4 @@ if prompt := st.chat_input("What would you like to know?"):
 
 # Footer
 st.markdown("---")
-st.markdown("*Powered by Llama 3.3 70B (Groq) • Built with Streamlit*")
+st.markdown("*Powered by Llama 3.3 70B (Groq) • PostgreSQL + pgvector • Built with Streamlit*")
