@@ -1,10 +1,13 @@
 # LangChain ecosystem
 langchain==0.1.0
 langchain-core
-langchain-community==0.0.13
-langchain-groq==0.0.1
+langchain-community
+langchain-groq
 langchain_openai
 langgraph
+langchain_text_splitters
+sentence-transformers
+tf-keras
 
 # Document loaders & processing
 pypdf==3.17.4
@@ -28,6 +31,7 @@ pydantic==2.5.3
 python-multipart==0.0.6
 
 # Database & env
+psycopg2
 psycopg2-binary==2.9.9
 python-dotenv==1.0.0
 
