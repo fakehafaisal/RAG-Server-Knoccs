@@ -5,12 +5,8 @@ import numpy as np
 from src.data_loader import load_all_documents
 
 class EmbeddingPipeline:
-    def __init__(self, model_name: str = "all-mpnet-base-v2", chunk_size: int = 512, chunk_overlap: int = 128):
-        """
-        Improved chunking strategy:
-        - Smaller chunks (512 tokens) for better precision
-        - 25% overlap to preserve context across boundaries
-        """
+    def __init__(self, model_name: str = "all-mpnet-base-v2", chunk_size: int = 1024, chunk_overlap: int = 256):
+
         self.chunk_size = chunk_size
         self.chunk_overlap = chunk_overlap
         self.model = SentenceTransformer(model_name)
@@ -18,9 +14,6 @@ class EmbeddingPipeline:
         print(f"[INFO] Chunk size: {chunk_size}, Overlap: {chunk_overlap}")
 
     def chunk_documents(self, documents: List[Any]) -> List[Any]:
-        """
-        Smart chunking with better separators for technical content
-        """
         splitter = RecursiveCharacterTextSplitter(
             chunk_size=self.chunk_size,
             chunk_overlap=self.chunk_overlap,

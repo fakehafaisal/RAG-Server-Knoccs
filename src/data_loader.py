@@ -6,10 +6,6 @@ from langchain_community.document_loaders.excel import UnstructuredExcelLoader
 from langchain_community.document_loaders import JSONLoader
 
 def load_all_documents(data_dir: str) -> List[Any]:
-    """
-    Load all supported files from the data directory and convert to LangChain document structure.
-    Supported: PDF, TXT, CSV, Excel, Word, JSON
-    """
     # Use project root data folder
     data_path = Path(data_dir).resolve()
     print(f"[DEBUG] Data path: {data_path}")

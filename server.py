@@ -1,11 +1,13 @@
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi import Request
+from fastapi.responses import JSONResponse, FileResponse, Response
+from starlette.exceptions import HTTPException as StarletteHTTPException
 from pydantic import BaseModel
 from typing import List, Dict, Optional
-import json
+import traceback
 from datetime import datetime
 import os
-from pathlib import Path
 
 from src.search import RAGSearch
 from src.vectorstore import PgVectorStore
@@ -21,23 +23,22 @@ app = FastAPI(
 # CORS middleware for Angular frontend
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:4200", "http://localhost:3000"],  # Add your Angular dev server
+    allow_origins=["http://localhost:4200", "http://localhost:3000"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# Global RAG instance (loaded on startup)
+# Global instances
 rag_search: Optional[RAGSearch] = None
 DATA_FOLDER = "data"
 
-# ============= REQUEST/RESPONSE MODELS =============
-
+# ==================== REQUEST/RESPONSE MODELS ====================
 class QueryRequest(BaseModel):
     query: str
-    top_k: Optional[int] = 10
-    use_query_expansion: Optional[bool] = True
-    return_sources: Optional[bool] = False
+    top_k: Optional[int] = 15
+    use_query_expansion: Optional[bool] = False
+    return_sources: Optional[bool] = True
 
 class QueryResponse(BaseModel):
     answer: str
@@ -46,50 +47,39 @@ class QueryResponse(BaseModel):
     query_expansions: Optional[List[str]] = None
 
 class RebuildRequest(BaseModel):
-    chunk_size: Optional[int] = 512
-    chunk_overlap: Optional[int] = 128
+    chunk_size: Optional[int] = 1024
+    chunk_overlap: Optional[int] = 256
 
 class StatsResponse(BaseModel):
     total_chunks: int
     total_sources: int
     kb_status: str
 
-class DocumentInfo(BaseModel):
-    filename: str
-    source: str
-    chunks: int
-    uploaded_at: str
-
-# ============= STARTUP/SHUTDOWN =============
-
+# ==================== STARTUP ====================
 @app.on_event("startup")
 async def startup_event():
     """Initialize RAG system on startup"""
     global rag_search
     try:
-        # Check if KB exists
         store = PgVectorStore()
         stats = store.get_stats()
-        
         if stats['total_chunks'] > 0:
-            rag_search = RAGSearch(use_query_expansion=True)
+            rag_search = RAGSearch(use_query_expansion=False, debug=False, vectorstore=store)
             print(f"[INFO] RAG system initialized with {stats['total_chunks']} chunks")
         else:
             print("[WARNING] Knowledge base is empty. Please build it first.")
     except Exception as e:
         print(f"[ERROR] Failed to initialize RAG system: {e}")
-        print("[INFO] You can still use the API to build the knowledge base")
+        traceback.print_exc()
 
 @app.on_event("shutdown")
 async def shutdown_event():
-    """Cleanup on shutdown"""
     print("[INFO] Shutting down RAG API")
 
-# ============= HEALTH CHECK =============
-
+# ==================== HEALTH CHECK ====================
 @app.get("/")
 def root():
-    """Root endpoint - health check"""
+    """Root endpoint - service info"""
     return {
         "service": "Knoccs RAG API",
         "status": "running",
@@ -99,16 +89,23 @@ def root():
             "search": "/rag/search",
             "stats": "/rag/stats",
             "rebuild": "/rag/rebuild",
-            "clear": "/rag/clear"
+            "clear": "/rag/clear",
+            "evaluate": "/rag/evaluate"
         }
     }
 
 @app.get("/health")
 def health_check():
-    """Health check endpoint"""
+    global rag_search
+    
     try:
-        store = PgVectorStore()
-        stats = store.get_stats()
+        # Reuse existing vectorstore if available
+        if rag_search and hasattr(rag_search, 'vectorstore'):
+            stats = rag_search.vectorstore.get_stats()
+        else:
+            store = PgVectorStore(use_reranker=False)
+            stats = store.get_stats()
+            
         return {
             "status": "healthy",
             "database": "connected",
@@ -116,63 +113,74 @@ def health_check():
             "rag_loaded": rag_search is not None
         }
     except Exception as e:
+        print(f"[ERROR] Health check failed: {str(e)}")
+        traceback.print_exc()
         raise HTTPException(status_code=503, detail=f"Service unhealthy: {str(e)}")
 
-# ============= RAG QUERY ENDPOINTS =============
-
+# ==================== QUERY ENDPOINT ====================
 @app.post("/rag/query", response_model=QueryResponse)
 def query_rag(request: QueryRequest):
-    """
-    Main RAG query endpoint - asks a question to the knowledge base
-    """
     global rag_search
-    
-    # Check if RAG is initialized
+
     if rag_search is None:
         try:
             rag_search = RAGSearch(use_query_expansion=request.use_query_expansion)
         except Exception as e:
+            print(f"[ERROR] Failed to initialize RAG: {str(e)}")
+            traceback.print_exc()
             raise HTTPException(
-                status_code=503, 
+                status_code=503,
                 detail=f"RAG system not initialized. Please build knowledge base first. Error: {str(e)}"
             )
-    
-    # Update query expansion setting
+
     rag_search.use_query_expansion = request.use_query_expansion
+
     
+
     try:
         # Get expanded queries if needed
         query_expansions = None
         if request.use_query_expansion:
             query_expansions = rag_search.expand_query(request.query)
-        
-        # Get answer
+
+        # Get answer from RAG
         answer = rag_search.search_and_summarize(
-            request.query, 
+            request.query,
             top_k=request.top_k,
             initial_k=request.top_k * 3
         )
-        
+
         # Get sources if requested
         sources = None
         if request.return_sources:
-            sources = rag_search.search_only(request.query, top_k=request.top_k)
-        
+            raw_results = rag_search.search_only(request.query, top_k=request.top_k)
+            sources = [
+                {
+                    "text": r.get("metadata", {}).get("text", ""),
+                    "source": r.get("metadata", {}).get("source", "unknown"),
+                    "document_name": r.get("metadata", {}).get("document_name", "unknown"),
+                    "document_type": r.get("metadata", {}).get("document_type", "unknown"),
+                    "chunk_id": r.get("chunk_id"),
+                    "rerank_score": r.get("rerank_score")
+                } for r in raw_results
+            ]
+
         return QueryResponse(
             answer=answer,
             sources=sources,
             timestamp=datetime.utcnow().isoformat() + "Z",
             query_expansions=query_expansions
         )
-        
+
     except Exception as e:
+        print(f"[ERROR] Query failed: {str(e)}")
+        traceback.print_exc()
         raise HTTPException(status_code=500, detail=f"Query failed: {str(e)}")
 
 @app.post("/rag/search")
 def search_only(request: QueryRequest):
     """
     Search-only endpoint - returns raw search results without LLM summarization
-    Useful for debugging or building custom UI
     """
     global rag_search
     
@@ -188,18 +196,63 @@ def search_only(request: QueryRequest):
             "timestamp": datetime.utcnow().isoformat() + "Z"
         }
     except Exception as e:
+        print(f"[ERROR] Search failed: {str(e)}")
+        traceback.print_exc()
         raise HTTPException(status_code=500, detail=f"Search failed: {str(e)}")
+
+# ============= DEEPEVAL ENDPOINT (SEPARATE) =============
+
+@app.post("/rag/evaluate")
+def evaluate_query_deepeval(request: QueryRequest):
+    """
+    Evaluate a query using DeepEval metrics
+    This is SEPARATE from normal queries - only use for testing/evaluation!
+    """
+    global rag_search
+    
+    if rag_search is None:
+        raise HTTPException(status_code=503, detail="RAG system not initialized")
+    
+    try:
+        # Import DeepEval here (optional dependency)
+        from src.deepeval import DeepEvalService
+        
+        evaluator = DeepEvalService(rag_search)
+        result = evaluator.evaluate_query(request.query)
+        
+        return {
+            "query": result["query"],
+            "answer": result["answer"],
+            "num_retrieved_chunks": result["num_retrieved_chunks"],
+            "metrics": result["metrics"],
+            "timestamp": datetime.utcnow().isoformat() + "Z"
+        }
+        
+    except ImportError:
+        raise HTTPException(
+            status_code=503, 
+            detail="DeepEval not installed. Run: pip install deepeval"
+        )
+    except Exception as e:
+        print(f"[ERROR] Evaluation failed: {str(e)}")
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"Evaluation failed: {str(e)}")
 
 # ============= KNOWLEDGE BASE MANAGEMENT =============
 
 @app.get("/rag/stats", response_model=StatsResponse)
 def get_stats():
-    """
-    Get statistics about the knowledge base
-    """
+    """Get knowledge base statistics"""
+    global rag_search
+    
     try:
-        store = PgVectorStore()
-        stats = store.get_stats()
+        # Reuse existing vectorstore if RAG is already initialized
+        if rag_search and hasattr(rag_search, 'vectorstore'):
+            stats = rag_search.vectorstore.get_stats()
+        else:
+            # Create new instance WITHOUT reranker (we just need stats)
+            store = PgVectorStore(use_reranker=False)
+            stats = store.get_stats()
         
         kb_status = "empty"
         if stats['total_chunks'] > 0:
@@ -211,6 +264,8 @@ def get_stats():
             kb_status=kb_status
         )
     except Exception as e:
+        print(f"[ERROR] Stats endpoint failed: {str(e)}")
+        traceback.print_exc()
         raise HTTPException(status_code=500, detail=f"Failed to get stats: {str(e)}")
 
 @app.post("/rag/rebuild")
@@ -236,10 +291,15 @@ def rebuild_knowledge_base(request: RebuildRequest):
             chunk_overlap=request.chunk_overlap,
             use_reranker=True
         )
+        
+        # Clear existing data first
+        store.clear()
+        
+        # Build new data
         store.build_from_documents(docs)
         
         # Reinitialize RAG
-        rag_search = RAGSearch(use_query_expansion=True)
+        rag_search = RAGSearch(use_query_expansion=False, vectorstore=store)
         
         # Get final stats
         stats = store.get_stats()
@@ -255,13 +315,13 @@ def rebuild_knowledge_base(request: RebuildRequest):
         }
         
     except Exception as e:
+        print(f"[ERROR] Rebuild failed: {str(e)}")
+        traceback.print_exc()
         raise HTTPException(status_code=500, detail=f"Rebuild failed: {str(e)}")
 
 @app.delete("/rag/clear")
 def clear_knowledge_base():
-    """
-    Clear all data from the knowledge base (WARNING: This is irreversible!)
-    """
+    """Clear the entire knowledge base"""
     global rag_search
     
     try:
@@ -276,19 +336,37 @@ def clear_knowledge_base():
             "timestamp": datetime.utcnow().isoformat() + "Z"
         }
     except Exception as e:
+        print(f"[ERROR] Clear failed: {str(e)}")
+        traceback.print_exc()
         raise HTTPException(status_code=500, detail=f"Clear failed: {str(e)}")
-
-# Document management endpoints removed - not needed for this implementation
 
 # ============= ERROR HANDLERS =============
 
-@app.exception_handler(404)
-async def not_found_handler(request, exc):
-    return {"error": "Endpoint not found", "path": str(request.url)}
+@app.exception_handler(StarletteHTTPException)
+async def http_exception_handler(request: Request, exc: StarletteHTTPException):
+    return JSONResponse(status_code=exc.status_code, content={
+        "error": exc.detail if hasattr(exc, 'detail') else "HTTP error",
+        "path": str(request.url)
+    })
 
-@app.exception_handler(500)
-async def internal_error_handler(request, exc):
-    return {"error": "Internal server error", "detail": str(exc)}
+
+@app.exception_handler(Exception)
+async def internal_error_handler(request: Request, exc: Exception):
+    # Log stack trace for debugging
+    print(f"[ERROR] Unhandled exception: {str(exc)}")
+    traceback.print_exc()
+    return JSONResponse(status_code=500, content={
+        "error": "Internal server error",
+        "detail": str(exc)
+    })
+
+# Serve favicon if requested (avoid 500s from missing favicons)
+@app.get("/favicon.ico")
+async def favicon():
+    ico_path = "favicon.ico"
+    if os.path.exists(ico_path):
+        return FileResponse(ico_path)
+    return Response(status_code=204)
 
 # ============= MAIN =============
 
@@ -300,6 +378,6 @@ if __name__ == "__main__":
         "server:app",
         host="0.0.0.0",
         port=8000,
-        reload=True,  # Auto-reload on code changes
+        reload=True,
         log_level="info"
     )
