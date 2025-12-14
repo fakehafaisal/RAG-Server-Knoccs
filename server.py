@@ -124,7 +124,7 @@ def query_rag(request: QueryRequest):
 
     if rag_search is None:
         try:
-            rag_search = RAGSearch(use_query_expansion=request.use_query_expansion)
+            rag_search = RAGSearch(use_query_expansion=False)
         except Exception as e:
             print(f"[ERROR] Failed to initialize RAG: {str(e)}")
             traceback.print_exc()
@@ -289,7 +289,8 @@ def rebuild_knowledge_base(request: RebuildRequest):
         store = PgVectorStore(
             chunk_size=request.chunk_size,
             chunk_overlap=request.chunk_overlap,
-            use_reranker=True
+            use_reranker=True,
+            debug=True 
         )
         
         # Clear existing data first

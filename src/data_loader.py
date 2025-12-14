@@ -4,83 +4,110 @@ from langchain_community.document_loaders import PyPDFLoader, TextLoader, CSVLoa
 from langchain_community.document_loaders import Docx2txtLoader
 from langchain_community.document_loaders.excel import UnstructuredExcelLoader
 from langchain_community.document_loaders import JSONLoader
+from langchain_core.documents import Document
 
 def load_all_documents(data_dir: str) -> List[Any]:
-    # Use project root data folder
+    """
+    Load documents and consolidate multi-page files into single Document objects
+    """
     data_path = Path(data_dir).resolve()
-    print(f"[DEBUG] Data path: {data_path}")
+    print(f"[INFO] Loading documents from: {data_path}")
     documents = []
 
-    # PDF files
+    # PDF files - CONSOLIDATE PAGES
     pdf_files = list(data_path.glob('**/*.pdf'))
-    print(f"[DEBUG] Found {len(pdf_files)} PDF files: {[str(f) for f in pdf_files]}")
+    print(f"[INFO] Found {len(pdf_files)} PDF files")
     for pdf_file in pdf_files:
-        print(f"[DEBUG] Loading PDF: {pdf_file}")
         try:
             loader = PyPDFLoader(str(pdf_file))
-            loaded = loader.load()
-            print(f"[DEBUG] Loaded {len(loaded)} PDF docs from {pdf_file}")
-            documents.extend(loaded)
+            pages = loader.load()  # Returns list of pages
+            
+            # Consolidate all pages into one document
+            full_text = "\n\n".join([page.page_content for page in pages])
+            
+            consolidated_doc = Document(
+                page_content=full_text,
+                metadata={
+                    'source': str(pdf_file),
+                    'name': pdf_file.name,
+                    'type': 'pdf',
+                    'pages': len(pages)
+                }
+            )
+            
+            print(f"  ✓ Loaded {pdf_file.name} ({len(pages)} pages)")
+            documents.append(consolidated_doc)
         except Exception as e:
-            print(f"[ERROR] Failed to load PDF {pdf_file}: {e}")
+            print(f"  ✗ Failed to load {pdf_file.name}: {e}")
 
     # TXT files
     txt_files = list(data_path.glob('**/*.txt'))
-    print(f"[DEBUG] Found {len(txt_files)} TXT files: {[str(f) for f in txt_files]}")
+    print(f"[INFO] Found {len(txt_files)} TXT files")
     for txt_file in txt_files:
-        print(f"[DEBUG] Loading TXT: {txt_file}")
         try:
             loader = TextLoader(str(txt_file))
             loaded = loader.load()
-            print(f"[DEBUG] Loaded {len(loaded)} TXT docs from {txt_file}")
+            for doc in loaded:
+                doc.metadata['source'] = str(txt_file)
+                doc.metadata['name'] = txt_file.name
+                doc.metadata['type'] = 'txt'
+            print(f"  ✓ Loaded {txt_file.name}")
             documents.extend(loaded)
         except Exception as e:
-            print(f"[ERROR] Failed to load TXT {txt_file}: {e}")
+            print(f"  ✗ Failed to load {txt_file.name}: {e}")
 
     # CSV files
     csv_files = list(data_path.glob('**/*.csv'))
-    print(f"[DEBUG] Found {len(csv_files)} CSV files: {[str(f) for f in csv_files]}")
+    print(f"[INFO] Found {len(csv_files)} CSV files")
     for csv_file in csv_files:
-        print(f"[DEBUG] Loading CSV: {csv_file}")
         try:
             loader = CSVLoader(str(csv_file))
             loaded = loader.load()
-            print(f"[DEBUG] Loaded {len(loaded)} CSV docs from {csv_file}")
+            for doc in loaded:
+                doc.metadata['source'] = str(csv_file)
+                doc.metadata['name'] = csv_file.name
+                doc.metadata['type'] = 'csv'
+            print(f"  ✓ Loaded {csv_file.name}")
             documents.extend(loaded)
         except Exception as e:
-            print(f"[ERROR] Failed to load CSV {csv_file}: {e}")
+            print(f"  ✗ Failed to load {csv_file.name}: {e}")
 
     # Excel files
     xlsx_files = list(data_path.glob('**/*.xlsx'))
-    print(f"[DEBUG] Found {len(xlsx_files)} Excel files: {[str(f) for f in xlsx_files]}")
+    print(f"[INFO] Found {len(xlsx_files)} Excel files")
     for xlsx_file in xlsx_files:
-        print(f"[DEBUG] Loading Excel: {xlsx_file}")
         try:
             loader = UnstructuredExcelLoader(str(xlsx_file))
             loaded = loader.load()
-            print(f"[DEBUG] Loaded {len(loaded)} Excel docs from {xlsx_file}")
+            for doc in loaded:
+                doc.metadata['source'] = str(xlsx_file)
+                doc.metadata['name'] = xlsx_file.name
+                doc.metadata['type'] = 'xlsx'
+            print(f"  ✓ Loaded {xlsx_file.name}")
             documents.extend(loaded)
         except Exception as e:
-            print(f"[ERROR] Failed to load Excel {xlsx_file}: {e}")
+            print(f"  ✗ Failed to load {xlsx_file.name}: {e}")
 
     # Word files
     docx_files = list(data_path.glob('**/*.docx'))
-    print(f"[DEBUG] Found {len(docx_files)} Word files: {[str(f) for f in docx_files]}")
+    print(f"[INFO] Found {len(docx_files)} Word files")
     for docx_file in docx_files:
-        print(f"[DEBUG] Loading Word: {docx_file}")
         try:
             loader = Docx2txtLoader(str(docx_file))
             loaded = loader.load()
-            print(f"[DEBUG] Loaded {len(loaded)} Word docs from {docx_file}")
+            for doc in loaded:
+                doc.metadata['source'] = str(docx_file)
+                doc.metadata['name'] = docx_file.name
+                doc.metadata['type'] = 'docx'
+            print(f"  ✓ Loaded {docx_file.name}")
             documents.extend(loaded)
         except Exception as e:
-            print(f"[ERROR] Failed to load Word {docx_file}: {e}")
+            print(f"  ✗ Failed to load {docx_file.name}: {e}")
 
     # JSON files
     json_files = list(data_path.glob('**/*.json'))
-    print(f"[DEBUG] Found {len(json_files)} JSON files: {[str(f) for f in json_files]}")
+    print(f"[INFO] Found {len(json_files)} JSON files")
     for json_file in json_files:
-        print(f"[DEBUG] Loading JSON: {json_file}")
         try:
             loader = JSONLoader(
                 file_path=str(json_file),
@@ -88,16 +115,31 @@ def load_all_documents(data_dir: str) -> List[Any]:
                 text_content=False
             )
             loaded = loader.load()
-            print(f"[DEBUG] Loaded {len(loaded)} JSON docs from {json_file}")
+            for doc in loaded:
+                doc.metadata['source'] = str(json_file)
+                doc.metadata['name'] = json_file.name
+                doc.metadata['type'] = 'json'
+            print(f"  ✓ Loaded {json_file.name}")
             documents.extend(loaded)
         except Exception as e:
-            print(f"[ERROR] Failed to load JSON {json_file}: {e}")
-    print(f"[DEBUG] Total loaded documents: {len(documents)}")
+            print(f"  ✗ Failed to load {json_file.name}: {e}")
+    
+    print(f"\n[SUCCESS] Loaded {len(documents)} document files")
+    
+    # Show summary
+    if documents:
+        print(f"\n[INFO] Sample metadata from first document:")
+        print(f"  source: {documents[0].metadata.get('source')}")
+        print(f"  name: {documents[0].metadata.get('name')}")
+        print(f"  type: {documents[0].metadata.get('type')}")
+        print(f"  Content preview: {documents[0].page_content[:200]}...")
+    
     return documents
 
 # Example usage
 if __name__ == "__main__":
     docs = load_all_documents("data")
-    print(f"Loaded {len(docs)} documents.")
-    print("Example document:", docs[0] if docs else None)
-
+    print(f"\nLoaded {len(docs)} documents.")
+    if docs:
+        print("\nFirst document metadata:", docs[0].metadata)
+        print("\nFirst document preview:", docs[0].page_content[:200])

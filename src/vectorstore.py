@@ -21,12 +21,14 @@ class PgVectorStore:
                 embedding_model: str = "all-mpnet-base-v2", 
                 chunk_size: int = 1024, 
                 chunk_overlap: int = 256,
-                use_reranker: bool = True):
+                use_reranker: bool = True,
+                debug: bool = False):
         
         self.embedding_model = embedding_model
         self.chunk_size = chunk_size
         self.chunk_overlap = chunk_overlap
         self.use_reranker = use_reranker
+        self.debug = debug
 
         # ------------------------------------------------------------
         # FIX: Proper model loading without meta tensor issues
@@ -57,11 +59,17 @@ class PgVectorStore:
             raise
 
         # ------------------------------------------------------------
-        # Reranker (unchanged)
+        # Reranker with error handling
         # ------------------------------------------------------------
         if use_reranker:
-            self.reranker = CrossEncoder('cross-encoder/ms-marco-MiniLM-L-6-v2')
-            print(f"[INFO] Loaded reranker: cross-encoder/ms-marco-MiniLM-L-6-v2")
+            try:
+                self.reranker = CrossEncoder('cross-encoder/ms-marco-MiniLM-L-6-v2')
+                print(f"[INFO] Loaded reranker: cross-encoder/ms-marco-MiniLM-L-6-v2")
+            except Exception as e:
+                print(f"[WARNING] Failed to load reranker: {e}")
+                print("[WARNING] Continuing without reranker")
+                self.use_reranker = False
+                self.reranker = None
 
         # Database config and initialization
         self.db_config = {
@@ -141,49 +149,107 @@ class PgVectorStore:
         conn = self._get_connection()
         cur = conn.cursor()
         try:
-            # Insert documents
+            # Insert documents and map chunk -> document
             doc_map = {}
             for idx, doc in enumerate(documents):
+                source = doc.metadata.get("source", f"doc_{idx}")
                 cur.execute(
                     "INSERT INTO documents (name, type, source) VALUES (%s, %s, %s) RETURNING id",
-                    (doc.metadata.get("name", "unknown"), 
-                    doc.metadata.get("type", "unknown"), 
-                    doc.metadata.get("source", "unknown"))
+                    (doc.metadata.get("name", "unknown"), doc.metadata.get("type", "unknown"), source)
                 )
                 doc_id = cur.fetchone()[0]
-                doc_map[doc.metadata.get("source", f"doc_{idx}")] = doc_id
+                # Store mapping with BOTH source and doc_idx as fallback
+                doc_map[source] = doc_id
+                doc_map[f"doc_{idx}"] = doc_id  # Fallback key
+                
+                if self.debug:
+                    print(f"[DEBUG] Mapped document '{source}' to doc_id={doc_id}")
 
-            # Insert chunks ONE BY ONE to get IDs reliably
-            chunk_ids = []
+            # Prepare chunk data
+            chunk_data = []
+            unmapped_count = 0
             for i, chunk in enumerate(chunks):
-                document_id = doc_map.get(chunk.metadata.get("source"))
-                cur.execute(
-                    "INSERT INTO chunks (document_id, text, page, chunk_id) VALUES (%s, %s, %s, %s) RETURNING id",
-                    (document_id, 
-                    clean_text(chunk.page_content), 
-                    chunk.metadata.get("page"), 
-                    chunk.metadata.get("chunk_id", i))
-                )
-                chunk_id = cur.fetchone()[0]
-                chunk_ids.append(chunk_id)
+                # Get document identifier from chunk metadata
+                chunk_doc_ref = chunk.metadata.get("document")
+                document_id = doc_map.get(chunk_doc_ref)
+                
+                if document_id is None:
+                    # Fallback: try to match by source
+                    source = chunk.metadata.get("source")
+                    document_id = doc_map.get(source)
+                
+                if document_id is None:
+                    unmapped_count += 1
+                    if self.debug:
+                        print(f"[WARNING] Chunk {i} couldn't be mapped to document. Ref: '{chunk_doc_ref}', Source: '{chunk.metadata.get('source')}'")
+                
+                chunk_data.append((
+                    document_id,
+                    clean_text(chunk.page_content),
+                    chunk.metadata.get("page"),
+                    chunk.metadata.get("chunk_id", i)
+                ))
             
-            print(f"[INFO] Inserted {len(chunk_ids)} chunks")
-
-            # Insert embeddings in BATCHES
-            embedding_data = [(chunk_id, emb.tolist()) for chunk_id, emb in zip(chunk_ids, embeddings)]
+            if unmapped_count > 0:
+                print(f"[WARNING] {unmapped_count} chunks could not be mapped to documents!")
             
-            batch_size = 1000
-            for i in range(0, len(embedding_data), batch_size):
-                batch = embedding_data[i:i + batch_size]
-                execute_values(
+            # Insert chunks and get IDs - USE DIFFERENT APPROACH
+            chunk_ids = []
+            print(f"[INFO] Inserting {len(chunk_data)} chunks...")
+            
+            # Method 1: Try execute_values with page_size
+            try:
+                from psycopg2.extras import execute_values
+                result = execute_values(
                     cur,
-                    "INSERT INTO embeddings (chunk_id, embedding) VALUES %s",
-                    batch
+                    "INSERT INTO chunks (document_id, text, page, chunk_id) VALUES %s RETURNING id",
+                    chunk_data,
+                    page_size=1000,
+                    fetch=True
                 )
-                print(f"[INFO] Inserted embedding batch {i//batch_size + 1}/{(len(embedding_data)-1)//batch_size + 1}")
+                # execute_values with fetch=True returns the results directly
+                if result:
+                    chunk_ids = [row[0] for row in result]
+                else:
+                    # Fallback: fetch from cursor
+                    chunk_ids = [row[0] for row in cur.fetchall()]
+                
+                print(f"[INFO] Inserted {len(chunk_ids)} chunks via batch insert")
+                
+            except Exception as e:
+                print(f"[WARNING] Batch insert failed: {e}")
+                print("[INFO] Falling back to individual inserts...")
+                # Fallback: insert one by one
+                chunk_ids = []
+                for chunk_tuple in chunk_data:
+                    cur.execute(
+                        "INSERT INTO chunks (document_id, text, page, chunk_id) VALUES (%s, %s, %s, %s) RETURNING id",
+                        chunk_tuple
+                    )
+                    chunk_ids.append(cur.fetchone()[0])
+                print(f"[INFO] Inserted {len(chunk_ids)} chunks via individual inserts")
+
+            # Verify chunk_ids length matches
+            if len(chunk_ids) != len(embeddings):
+                raise ValueError(f"Mismatch: {len(chunk_ids)} chunks inserted but {len(embeddings)} embeddings generated!")
+
+            # Insert embeddings
+            print(f"[INFO] Inserting {len(chunk_ids)} embeddings...")
+            embedding_data = [(chunk_id, emb.tolist()) for chunk_id, emb in zip(chunk_ids, embeddings)]
+            execute_values(
+                cur,
+                "INSERT INTO embeddings (chunk_id, embedding) VALUES %s",
+                embedding_data,
+                page_size=1000
+            )
             
             conn.commit()
-            print(f"[INFO] Successfully inserted {len(chunks)} chunks and {len(embeddings)} embeddings")
+            print(f"[SUCCESS] Successfully inserted {len(chunks)} chunks and {len(chunk_ids)} embeddings")
+            
+        except Exception as e:
+            conn.rollback()
+            print(f"[ERROR] Build failed: {e}")
+            raise
         finally:
             cur.close()
             conn.close()
@@ -219,24 +285,37 @@ class PgVectorStore:
             cur.close()
             conn.close()
 
-    def query(self, query_text: str, top_k: int = 15, initial_k: int = 50) -> List[Dict]:
-        # Clean and validate query text
+    def query(self, query_text: str, top_k: int = 15, initial_k: int = 50, use_hybrid: bool = True) -> List[Dict]:
+        """
+        Hybrid retrieval: BM25 + Dense embeddings + Reranking
+        """
         query_text = query_text.strip()
         if not query_text:
             print("[ERROR] Empty query text")
             return []
         
-        # Encode query with explicit numpy conversion
-        query_emb = self.model.encode([query_text], convert_to_numpy=True).astype('float32')
+        if use_hybrid:
+            # HYBRID: Combine BM25 and dense retrieval
+            bm25_results = self.search_bm25(query_text, top_k=initial_k // 2)
+            dense_results = self.search_dense(query_text, top_k=initial_k // 2)
+            
+            # Merge and deduplicate by chunk_id
+            seen_ids = set()
+            combined_results = []
+            
+            for r in bm25_results + dense_results:
+                chunk_id = r.get("chunk_id")
+                if chunk_id not in seen_ids:
+                    combined_results.append(r)
+                    seen_ids.add(chunk_id)
+            
+            initial_results = combined_results[:initial_k]
+        else:
+            # Dense only
+            initial_results = self.search_dense(query_text, top_k=initial_k)
         
-        # Check for NaN values
-        if np.isnan(query_emb).any():
-            print(f"[ERROR] NaN detected in embedding for query: {query_text[:100]}")
-            return []
-        
-        initial_results = self.search(query_emb, top_k=initial_k)
-        
-        if self.use_reranker and initial_results:
+        # Rerank
+        if self.use_reranker and self.reranker and initial_results:
             pairs = [(query_text, r["metadata"]["text"]) for r in initial_results]
             scores = self.reranker.predict(pairs)
             for i, score in enumerate(scores):
@@ -246,6 +325,74 @@ class PgVectorStore:
             final_results = initial_results[:top_k]
         
         return final_results
+
+    def search_dense(self, query_text: str, top_k: int = 15) -> List[Dict]:
+        """Dense vector search (your existing search method)"""
+        query_emb = self.model.encode([query_text], convert_to_numpy=True).astype('float32')
+        
+        if np.isnan(query_emb).any():
+            print(f"[ERROR] NaN in embedding")
+            return []
+        
+        return self.search(query_emb, top_k=top_k)
+
+    def search_bm25(self, query_text: str, top_k: int = 15) -> List[Dict]:
+        """
+        BM25 keyword search (good for names, dates, exact matches)
+        """
+        from rank_bm25 import BM25Okapi
+        
+        conn = self._get_connection()
+        cur = conn.cursor()
+        
+        try:
+            # Fetch all chunks with their text
+            cur.execute("""
+                SELECT ch.id, ch.text, d.name, d.type, d.source
+                FROM chunks ch
+                JOIN documents d ON ch.document_id = d.id
+            """)
+            
+            rows = cur.fetchall()
+            if not rows:
+                return []
+            
+            # Prepare for BM25
+            chunk_ids = [row[0] for row in rows]
+            texts = [row[1] for row in rows]
+            metadata = [{
+                "text": row[1],
+                "document_name": row[2],
+                "document_type": row[3],
+                "source": row[4]
+            } for row in rows]
+            
+            # Tokenize (simple whitespace + lowercase)
+            tokenized_corpus = [doc.lower().split() for doc in texts]
+            tokenized_query = query_text.lower().split()
+            
+            # BM25 scoring
+            bm25 = BM25Okapi(tokenized_corpus)
+            scores = bm25.get_scores(tokenized_query)
+            
+            # Get top-k
+            top_indices = np.argsort(scores)[::-1][:top_k]
+            
+            results = []
+            for idx in top_indices:
+                if scores[idx] > 0:  # Only return if there's some match
+                    results.append({
+                        "chunk_id": chunk_ids[idx],
+                        "bm25_score": float(scores[idx]),
+                        "distance": 1 - (scores[idx] / max(scores)),  # Normalize
+                        "metadata": metadata[idx]
+                    })
+            
+            return results
+            
+        finally:
+            cur.close()
+            conn.close()
 
     def get_stats(self) -> Dict:
         conn = self._get_connection()

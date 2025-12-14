@@ -59,7 +59,7 @@ Alternative questions (one per line):"""
         seen_chunk_ids = set()  # Use chunk_id instead of text for better deduplication
         
         for q in queries:
-            results = self.vectorstore.query(q, top_k=top_k, initial_k=initial_k)
+            results = self.vectorstore.query(q, top_k=top_k, initial_k=initial_k, use_hybrid=True)
             if self.debug:
                 print(f"[DEBUG] Query '{q[:50]}...' returned {len(results)} results")
             
