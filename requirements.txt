@@ -37,3 +37,10 @@ python-dotenv==1.0.0
 
 # Utilities
 pathlib2==2.3.7.post1
+
+# Evaluation & Metrics
+deepeval>=3.7.0
+litellm>=1.80.0
+
+# Reranking
+rank-bm25

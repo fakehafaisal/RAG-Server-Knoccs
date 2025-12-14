@@ -55,6 +55,10 @@ class StatsResponse(BaseModel):
     total_sources: int
     kb_status: str
 
+class EvaluateRequest(BaseModel):
+    query: str
+    top_k: Optional[int] = 15
+
 # ==================== STARTUP ====================
 @app.on_event("startup")
 async def startup_event():
@@ -203,35 +207,41 @@ def search_only(request: QueryRequest):
 # ============= DEEPEVAL ENDPOINT (SEPARATE) =============
 
 @app.post("/rag/evaluate")
-def evaluate_query_deepeval(request: QueryRequest):
+def evaluate_query_deepeval(request: EvaluateRequest):  # Changed from QueryRequest
     """
-    Evaluate a query using DeepEval metrics
-    This is SEPARATE from normal queries - only use for testing/evaluation!
+    Evaluate a query using DeepEval metrics with Groq/LiteLLM
     """
     global rag_search
     
+    print(f"[INFO] Evaluate endpoint called with query: {request.query}")
+    
     if rag_search is None:
+        print("[ERROR] RAG search is None")
         raise HTTPException(status_code=503, detail="RAG system not initialized")
     
     try:
-        # Import DeepEval here (optional dependency)
+        print("[INFO] Attempting to import DeepEvalService...")
         from src.deepeval import DeepEvalService
+        print("[INFO] DeepEvalService imported successfully")
         
-        evaluator = DeepEvalService(rag_search)
+        print(f"[INFO] Initializing DeepEval with Groq...")
+        evaluator = DeepEvalService(rag_search, use_groq=True)
+        print("[INFO] DeepEvalService initialized")
+        
+        print(f"[INFO] Running evaluation...")
         result = evaluator.evaluate_query(request.query)
         
-        return {
-            "query": result["query"],
-            "answer": result["answer"],
-            "num_retrieved_chunks": result["num_retrieved_chunks"],
-            "metrics": result["metrics"],
-            "timestamp": datetime.utcnow().isoformat() + "Z"
-        }
+        result['timestamp'] = datetime.utcnow().isoformat() + "Z"
         
-    except ImportError:
+        print(f"[INFO] Evaluation complete!")
+        return result
+        
+    except ImportError as e:
+        print(f"[ERROR] Import failed: {str(e)}")
+        traceback.print_exc()
         raise HTTPException(
             status_code=503, 
-            detail="DeepEval not installed. Run: pip install deepeval"
+            detail=f"DeepEval/LiteLLM not installed: {str(e)}"
         )
     except Exception as e:
         print(f"[ERROR] Evaluation failed: {str(e)}")
