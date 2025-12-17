@@ -1,0 +1,230 @@
+# What Else From Your Lit Review Can Help KNOCCS
+
+## Already Using ✅
+
+1. **Patel's Hybrid Retrieval** - BM25 + Dense embeddings
+2. **DeepEval** - For evaluating your RAG quality
+
+---
+
+## HIGHLY RELEVANT - You Should Consider
+
+### 1. **Brehme et al. (Section 3.2): Industrial RAG Requirements**
+
+**What they found:** 13 industrial RAG deployments identified 12 critical requirements
+
+**Most Important for KNOCCS:**
+```
+Very High Priority:
+- Security & Data Protection (⭐⭐⭐)
+- Answer Quality/Correctness (⭐⭐⭐)
+
+High Priority:
+- Usability (⭐⭐)
+- Continuous Learning (ability to update KB)
+
+Medium Priority:
+- Explainability/Transparency
+- Integration with existing setup
+- Scalability
+```
+
+**How to USE this:**
+- Document which requirements you're meeting in your report
+- Example: "We address Answer Quality via DeepEval metrics (3 generic + 1 custom)"
+- Example: "We address Continuous Learning via dynamic knowledge base updates"
+- Example: "We ensure Security via PostgreSQL + pgvector with authentication"
+
+**Action:** Add a table in your report mapping KNOCCS to Brehme's requirements
+
+---
+
+### 2. **Brehme et al. (Section 3.4): RAG Evaluation Methods**
+
+**What they found:** Multiple evaluation approaches exist:
+- LLM-based relevance scoring ✅ (You're doing this with DeepEval)
+- Labeled benchmark datasets (You're not doing this)
+- Human expert evaluation (You're not doing this)
+- Retrieval speed monitoring
+- System-level performance metrics
+
+**How to USE this:**
+- Your current approach (DeepEval LLM-based) is industry-validated! ✅
+- You could add performance metrics to strengthen evaluation
+- Example: Track retrieval latency, token usage, response time
+
+**Action:** Add performance metrics alongside your DeepEval scores
+```python
+# In your evaluation results, add:
+{
+  "query": "...",
+  "answer": "...",
+  "metrics": { ... },
+  "performance": {
+    "retrieval_time_ms": 145,
+    "total_response_time_ms": 2340,
+    "chunks_retrieved": 15,
+    "tokens_used": 1250
+  }
+}
+```
+
+---
+
+### 3. **Rivera et al. (Section 3.4): DeepEval Best Practices**
+
+**What they did:** Evaluated RAG chatbot using DeepEval with 8 metrics on 23 test queries
+
+**Their Setup (Very Similar to Yours):**
+- Test set: 23 queries (FAQs)
+- Metrics: Answer relevancy, Faithfulness, Contextual precision, Contextual recall, etc.
+- Knowledge base: Documentation + organizational data
+- Evaluation: Grouped metrics into "general" vs "RAG-specific"
+
+**How to USE this:**
+- They tested on real, stakeholder-validated queries
+- You should do the same!
+- Test on actual KNOCCS user questions, not random queries
+
+**Action:** Curate 20-30 real KNOCCS user questions from:
+- Customer support tickets
+- Frequently asked questions
+- Feature documentation
+- Use these for your DeepEval evaluation (not made-up queries)
+
+**Example test cases:**
+```
+Query 1: "How do I create a workflow in KNOCCS?"
+Expected: Should mention drag-drop builder, trigger/action mapping
+Retrieved context: Workflow guide docs
+
+Query 2: "What notification channels does KNOCCS support?"
+Expected: Email, SMS, Web notifications
+Retrieved context: Notification feature docs
+
+Query 3: "How do I export a report?"
+Expected: Steps for report export, supported formats
+Retrieved context: Report builder docs
+```
+
+---
+
+### 4. **Brehme et al. (Section 3.1): How Industry Uses RAG**
+
+**Key Finding:** "Primary industrial application is **question answering**"
+
+**What they monitored:**
+- Number of daily system requests (user engagement)
+- Frequency and type of issues users encounter
+- Latency and system stability
+
+**How to USE this:**
+- Track usage metrics of your KNOCCS KB
+- Monitor which types of queries fail most
+- Use this for iteration
+
+**Action:** Add monitoring to your RAG system
+```python
+# Log metrics for each query:
+{
+  "query_type": "feature_question",  # Classify queries
+  "success": true,
+  "answer_relevancy_score": 0.85,
+  "user_satisfied": true,  # If you can get feedback
+  "timestamp": "2025-12-15T10:30:00Z"
+}
+```
+
+---
+
+### 5. **Xu et al. (Section 3.1): Knowledge Graph + RAG**
+
+**What they found:** "Integrating RAG with knowledge graph significantly improves automated question answering"
+
+**Improvement:** Better retrieval accuracy + answering performance
+
+**How to USE this:**
+- You're not using KG, but you could add light metadata
+- Example: Tag chunks with KNOCCS feature categories
+  - `workflow_management`, `notifications`, `reports`, etc.
+- Use metadata for filtering before retrieval
+
+**Action:** (Optional future improvement)
+```python
+# Add feature tagging to chunks:
+chunk.metadata = {
+  "feature": "workflow_management",  # Category
+  "section": "getting_started",
+  "document": "workflow_guide.pdf"
+}
+
+# Filter retrieval by feature:
+results = kb.search(query, feature_filter="workflow_management")
+```
+
+---
+
+### 6. **Hilel et al. (Section 3): Graph-RAG for Enterprise Software**
+
+**What they did:** Used Graph-RAG for **software navigation and guidance**
+
+**Key insight:** "Represents system states and actions explicitly, reducing hallucinations"
+
+**Relevant to KNOCCS because:** KNOCCS is also enterprise software!
+
+**How to USE this:**
+- Could improve by mapping KNOCCS features as "states" and "actions"
+- Example: `workflow_created → trigger_configured → action_mapped → executed`
+- Helps LLM understand feature workflows better
+
+**Action:** (Advanced - future work)
+- Document KNOCCS feature workflows as state-action sequences
+- Use these as context when answering "how-to" questions
+
+---
+
+## MODERATELY RELEVANT - Nice to Have
+
+### 7. **Manninen et al. (Section 2.2): Design-to-Code Tools Evaluation**
+
+**Not directly RAG-related**, but relevant because:
+- You're also building a **design-to-code system** for KNOCCS (Figma → Angular)
+- Similar evaluation challenges (consistency, output quality)
+- Could use similar metrics for your design system evaluation
+
+---
+
+### 8. **LaTcoder & Prototype2Code (Section 2.1 & 2.3): Multimodal LLM Code Generation**
+
+**Not directly RAG-related**, but if you need to evaluate your design-to-code pipeline:
+- These use LLM for code generation (similar to your co-pilot use case)
+- Evaluation criteria: Layout accuracy, interactivity, maintainability
+- Could apply similar thinking to your design system
+
+---
+
+## NOT DIRECTLY APPLICABLE
+
+- Design-to-code sections (1, 2.1-2.3) - Different problem space
+- Specific tools evaluation (Anima, Locofy, Builder.io) - Not applicable to RAG
+
+---
+
+## Summary: What to Add to Your Project
+
+| Priority | Item | How to Add |
+|----------|------|-----------|
+| 🔴 HIGH | Industrial RAG requirements (Brehme) | Add requirements table in report |
+| 🔴 HIGH | Real test queries (Rivera) | Curate 20-30 actual KNOCCS questions |
+| 🟡 MED | Performance monitoring (Brehme) | Add latency/token metrics |
+| 🟡 MED | Query classification (Brehme) | Tag queries by type |
+| 🟢 LOW | Feature metadata tagging (Xu) | Optional: improve chunks with tags |
+| 🟢 LOW | State-action workflows (Hilel) | Future work: explicit feature workflows |
+
+---
+
+## What to Say in Your Final Report
+
+> *"Following industrial RAG best practices from Brehme et al., we evaluate KNOCCS KB against 12 critical requirements including answer quality, security, and usability. Our evaluation methodology aligns with Rivera et al.'s approach, using DeepEval metrics on stakeholder-validated test queries. We monitor both answer quality (DeepEval scores) and system performance (retrieval latency, token usage), addressing the full spectrum of industrial RAG requirements."*
+
+This shows you read the lit review AND applied it intelligently! 📚✨

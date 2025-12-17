@@ -12,6 +12,7 @@ import os
 from src.search import RAGSearch
 from src.vectorstore import PgVectorStore
 from src.data_loader import load_all_documents
+from src.deepeval import DeepEvalService
 
 # Initialize FastAPI app
 app = FastAPI(
@@ -31,7 +32,9 @@ app.add_middleware(
 
 # Global instances
 rag_search: Optional[RAGSearch] = None
+deepeval_service: Optional[DeepEvalService] = None
 DATA_FOLDER = "data"
+GROUND_TRUTH_FILE = "ground_truth.json"
 
 # ==================== REQUEST/RESPONSE MODELS ====================
 class QueryRequest(BaseModel):
@@ -62,23 +65,34 @@ class EvaluateRequest(BaseModel):
 # ==================== STARTUP ====================
 @app.on_event("startup")
 async def startup_event():
-    """Initialize RAG system on startup"""
-    global rag_search
+    """Initialize RAG system and DeepEval service on startup"""
+    global rag_search, deepeval_service
     try:
+        # Initialize RAG search
         store = PgVectorStore()
         stats = store.get_stats()
         if stats['total_chunks'] > 0:
-            rag_search = RAGSearch(use_query_expansion=False, debug=False, vectorstore=store)
-            print(f"[INFO] RAG system initialized with {stats['total_chunks']} chunks")
+            rag_search = RAGSearch(llm_model="gpt-5", use_query_expansion=False, debug=False, vectorstore=store)
+            print(f"RAG system initialized with {stats['total_chunks']} chunks")
         else:
             print("[WARNING] Knowledge base is empty. Please build it first.")
+        
+        # Initialize DeepEval service (loads ground truth if available)
+        try:
+            deepeval_service = DeepEvalService(rag_search, ground_truth_file=GROUND_TRUTH_FILE)
+            print("[DeepEval service initialized with ground truth support")
+        except Exception as e:
+            print(f"[WARNING] DeepEval initialization failed: {e}")
+            print("[WARNING] Continuing without DeepEval - evaluation endpoint may fail")
+            deepeval_service = None
+            
     except Exception as e:
-        print(f"[ERROR] Failed to initialize RAG system: {e}")
+        print(f"[ERROR] Failed to initialize systems: {e}")
         traceback.print_exc()
 
 @app.on_event("shutdown")
 async def shutdown_event():
-    print("[INFO] Shutting down RAG API")
+    print("Shutting down RAG API")
 
 # ==================== HEALTH CHECK ====================
 @app.get("/")
@@ -128,7 +142,7 @@ def query_rag(request: QueryRequest):
 
     if rag_search is None:
         try:
-            rag_search = RAGSearch(use_query_expansion=False)
+            rag_search = RAGSearch(llm_model="gpt-5", use_query_expansion=False)
         except Exception as e:
             print(f"[ERROR] Failed to initialize RAG: {str(e)}")
             traceback.print_exc()
@@ -138,8 +152,6 @@ def query_rag(request: QueryRequest):
             )
 
     rag_search.use_query_expansion = request.use_query_expansion
-
-    
 
     try:
         # Get expanded queries if needed
@@ -181,68 +193,80 @@ def query_rag(request: QueryRequest):
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=f"Query failed: {str(e)}")
 
-@app.post("/rag/search")
-def search_only(request: QueryRequest):
-    """
-    Search-only endpoint - returns raw search results without LLM summarization
-    """
-    global rag_search
-    
-    if rag_search is None:
-        raise HTTPException(status_code=503, detail="RAG system not initialized")
-    
-    try:
-        results = rag_search.search_only(request.query, top_k=request.top_k)
-        return {
-            "query": request.query,
-            "results": results,
-            "count": len(results),
-            "timestamp": datetime.utcnow().isoformat() + "Z"
-        }
-    except Exception as e:
-        print(f"[ERROR] Search failed: {str(e)}")
-        traceback.print_exc()
-        raise HTTPException(status_code=500, detail=f"Search failed: {str(e)}")
-
-# ============= DEEPEVAL ENDPOINT (SEPARATE) =============
+# ============= DEEPEVAL ENDPOINT (WITH GROUND TRUTH) =============
 
 @app.post("/rag/evaluate")
-def evaluate_query_deepeval(request: EvaluateRequest):  # Changed from QueryRequest
+def evaluate_query_deepeval(request: EvaluateRequest):
     """
-    Evaluate a query using DeepEval metrics with Groq/LiteLLM
-    """
-    global rag_search
+    Evaluate a query using DeepEval metrics (3 standard RAG metrics)
+    Referenceless evaluation - no ground truth needed
     
-    print(f"[INFO] Evaluate endpoint called with query: {request.query}")
+    Returns metrics scores: Answer Relevancy, Faithfulness, Contextual Precision
+    """
+    global rag_search, deepeval_service
+    
+    print(f"\n[INFO] ========== EVALUATE ENDPOINT CALLED ==========")
+    print(f"[INFO] Query: {request.query[:60]}...")
     
     if rag_search is None:
-        print("[ERROR] RAG search is None")
-        raise HTTPException(status_code=503, detail="RAG system not initialized")
+        print("[ERROR] RAG search is None - RAG system not initialized")
+        raise HTTPException(status_code=503, detail="RAG system not initialized. Please rebuild knowledge base first.")
+    
+    if deepeval_service is None:
+        print("[ERROR] DeepEval service is None - not initialized at startup")
+        raise HTTPException(status_code=503, detail="DeepEval service not initialized. Check server logs.")
     
     try:
-        print("[INFO] Attempting to import DeepEvalService...")
-        from src.deepeval import DeepEvalService
-        print("[INFO] DeepEvalService imported successfully")
-        
-        print(f"[INFO] Initializing DeepEval with Groq...")
-        evaluator = DeepEvalService(rag_search, use_groq=True)
-        print("[INFO] DeepEvalService initialized")
-        
-        print(f"[INFO] Running evaluation...")
-        result = evaluator.evaluate_query(request.query)
+        print("[INFO] Running evaluation with 3 metrics (referenceless mode)...")
+        result = deepeval_service.evaluate_query(request.query)
         
         result['timestamp'] = datetime.utcnow().isoformat() + "Z"
         
-        print(f"[INFO] Evaluation complete!")
-        return result
+        # Format metrics for frontend
+        metrics_summary = {}
         
-    except ImportError as e:
-        print(f"[ERROR] Import failed: {str(e)}")
-        traceback.print_exc()
-        raise HTTPException(
-            status_code=503, 
-            detail=f"DeepEval/LiteLLM not installed: {str(e)}"
-        )
+        # Check if there's a retrieval error
+        if 'error' in result.get('metrics', {}):
+            # If retrieval failed, just return the error
+            metrics_summary = result['metrics']
+        else:
+            # Process each metric normally
+            for metric_name, metric_data in result.get('metrics', {}).items():
+                # Ensure metric_data is a dictionary before calling .get()
+                if isinstance(metric_data, dict):
+                    if 'error' not in metric_data:
+                        metrics_summary[metric_name] = {
+                            "score": metric_data.get('score', 0),
+                            "passed": metric_data.get('passed', False),
+                            "reason": metric_data.get('reason'),
+                            "description": metric_data.get('description', '')
+                        }
+                    else:
+                        metrics_summary[metric_name] = {
+                            "score": 0,
+                            "passed": False,
+                            "error": metric_data.get('error'),
+                            "description": metric_data.get('description', '')
+                        }
+                else:
+                    # If metric_data is not a dict, skip it
+                    print(f"[WARNING] Unexpected metric_data type for {metric_name}: {type(metric_data)}")
+                    continue
+        
+        response = {
+            "query": result['query'],
+            "answer": result['answer'],
+            "expected_answer": result.get('expected_answer'),  # Always None in referenceless mode
+            "num_retrieved_chunks": result['num_retrieved_chunks'],
+            "metrics": metrics_summary,
+            "timestamp": result['timestamp']
+        }
+        
+        print(f"[INFO] ✓ Evaluation complete!")
+        print(f"[INFO] ========== EVALUATE ENDPOINT COMPLETE ==========\n")
+        
+        return response
+        
     except Exception as e:
         print(f"[ERROR] Evaluation failed: {str(e)}")
         traceback.print_exc()
@@ -280,11 +304,8 @@ def get_stats():
 
 @app.post("/rag/rebuild")
 def rebuild_knowledge_base(request: RebuildRequest):
-    """
-    Rebuild the entire knowledge base from the data/ folder
-    """
+    """Rebuild the entire knowledge base from the data/ folder"""
     global rag_search
-    
     try:
         # Load documents
         docs = load_all_documents(DATA_FOLDER)
@@ -303,17 +324,10 @@ def rebuild_knowledge_base(request: RebuildRequest):
             debug=True 
         )
         
-        # Clear existing data first
-        store.clear()
-        
-        # Build new data
-        store.build_from_documents(docs)
-        
-        # Reinitialize RAG
-        rag_search = RAGSearch(use_query_expansion=False, vectorstore=store)
-        
-        # Get final stats
-        stats = store.get_stats()
+        store.clear()  # Clear existing data first
+        store.build_from_documents(docs)  # Build new data
+        rag_search = RAGSearch(llm_model="gpt-5", use_query_expansion=False, vectorstore=store)  # Reinitialize RAG
+        stats = store.get_stats()  # Get final stats
         
         return {
             "message": "Knowledge base rebuilt successfully",
@@ -334,7 +348,6 @@ def rebuild_knowledge_base(request: RebuildRequest):
 def clear_knowledge_base():
     """Clear the entire knowledge base"""
     global rag_search
-    
     try:
         store = PgVectorStore()
         store.clear()
@@ -377,7 +390,8 @@ async def favicon():
     ico_path = "favicon.ico"
     if os.path.exists(ico_path):
         return FileResponse(ico_path)
-    return Response(status_code=204)
+    else:
+        return Response(status_code=204)
 
 # ============= MAIN =============
 
@@ -387,7 +401,7 @@ if __name__ == "__main__":
     # Run server
     uvicorn.run(
         "server:app",
-        host="0.0.0.0",
+        host="127.0.0.1",
         port=8000,
         reload=True,
         log_level="info"

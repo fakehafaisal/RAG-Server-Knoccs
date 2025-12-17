@@ -1,77 +1,53 @@
 import os
 from dotenv import load_dotenv
 from src.vectorstore import PgVectorStore
-from langchain_groq import ChatGroq
+from langchain_openai import ChatOpenAI  # Changed from ChatGroq
 from typing import List, Dict
 
 load_dotenv()
 
 class RAGSearch:
-    def __init__(self, 
-                 embedding_model: str = "all-mpnet-base-v2", 
-                 llm_model: str = "llama-3.3-70b-versatile",
-                 use_query_expansion: bool = False,
-                 debug: bool = False,
-                 vectorstore: PgVectorStore = None):
+    def __init__(self, embedding_model: str = "all-mpnet-base-v2", llm_model: str = "gpt-5",
+                use_query_expansion: bool = False,
+                debug: bool = False, vectorstore: PgVectorStore = None):
     
         if vectorstore:
             self.vectorstore = vectorstore
         else:
             self.vectorstore = PgVectorStore(embedding_model=embedding_model, use_reranker=True)
         
-        
-        groq_api_key = os.getenv("GROQ_API_KEY")
-        self.llm = ChatGroq(groq_api_key=groq_api_key, model_name=llm_model, temperature=0.1)
+        openai_api_key = os.getenv("OPENAI_API_KEY")  # Changed from GROQ_API_KEY
+        self.llm = ChatOpenAI(api_key=openai_api_key, model=llm_model, temperature=0.1)  # Changed to ChatOpenAI
         self.use_query_expansion = use_query_expansion
         self.debug = debug
-        print(f"[INFO] Groq LLM initialized: {llm_model}")
+        print(f"LLM initialized: {llm_model}")
 
-    def expand_query(self, query: str) -> List[str]:
-        if not self.use_query_expansion:
-            return [query]
-        
-        expansion_prompt = f"""Given the following question, generate 2 alternative phrasings or related questions that would help retrieve relevant information. Keep them concise.
-
-Original question: {query}
-
-Alternative questions (one per line):"""
-        
-        try:
-            response = self.llm.invoke(expansion_prompt)
-            alternatives = [line.strip() for line in response.content.strip().split('\n') if line.strip()]
-            # Return original + alternatives (max 3 total)
-            expanded = [query] + alternatives[:2]
-            if self.debug:
-                print(f"[DEBUG] Query expansions: {expanded}")
-            return expanded
-        except Exception as e:
-            if self.debug:
-                print(f"[DEBUG] Query expansion failed: {e}")
-            return [query]
 
     def search_and_summarize(self, query: str, top_k: int = 15, initial_k: int = 50) -> str:
         # Step 1: Query expansion
-        queries = self.expand_query(query)
-        print(f"[INFO] Expanded query into {len(queries)} variations")
+        queries = query
+        # print(f"[INFO] Expanded query into {len(queries)} variations")
         
         # Step 2: Retrieve for all query variations and deduplicate
         all_results = []
-        seen_chunk_ids = set()  # Use chunk_id instead of text for better deduplication
+        seen_chunk_ids = set()  # Use chunk_id instead 
         
-        for q in queries:
-            results = self.vectorstore.query(q, top_k=top_k, initial_k=initial_k, use_hybrid=True)
-            if self.debug:
-                print(f"[DEBUG] Query '{q[:50]}...' returned {len(results)} results")
+        # for q in queries:
+        results = self.vectorstore.query(queries, top_k=top_k, initial_k=initial_k, use_hybrid=True)
+        if self.debug:
+            # print(f"[DEBUG] Query '{q[:50]}...' returned {len(results)} results")
+            pass
             
-            for r in results:
-                chunk_id = r.get("chunk_id")
-                # Use chunk_id for deduplication instead of text
-                if chunk_id and chunk_id not in seen_chunk_ids:
-                    all_results.append(r)
-                    seen_chunk_ids.add(chunk_id)
+        for r in results:
+            chunk_id = r.get("chunk_id")
+            # Use chunk_id for deduplication instead of text
+            if chunk_id and chunk_id not in seen_chunk_ids:
+                all_results.append(r)
+                seen_chunk_ids.add(chunk_id)
         
         if self.debug:
-            print(f"[DEBUG] Total unique results after deduplication: {len(all_results)}")
+            # print(f"[DEBUG] Total unique results after deduplication: {len(all_results)}")
+            pass
         
         # Sort by score (rerank_score if available, else distance)
         all_results.sort(
@@ -170,4 +146,3 @@ if __name__ == "__main__":
     print(f"\n{'='*80}")
     print("DEEPEVAL EVALUATION")
     print('='*80)
-    

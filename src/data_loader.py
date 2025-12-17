@@ -7,16 +7,14 @@ from langchain_community.document_loaders import JSONLoader
 from langchain_core.documents import Document
 
 def load_all_documents(data_dir: str) -> List[Any]:
-    """
-    Load documents and consolidate multi-page files into single Document objects
-    """
+    """Load documents and consolidate multi-page files into single Document objects"""
     data_path = Path(data_dir).resolve()
-    print(f"[INFO] Loading documents from: {data_path}")
+    print("Loading documents from: {data_path}")
     documents = []
 
     # PDF files - CONSOLIDATE PAGES
     pdf_files = list(data_path.glob('**/*.pdf'))
-    print(f"[INFO] Found {len(pdf_files)} PDF files")
+    print(f"Found {len(pdf_files)} PDF files")
     for pdf_file in pdf_files:
         try:
             loader = PyPDFLoader(str(pdf_file))
@@ -42,7 +40,7 @@ def load_all_documents(data_dir: str) -> List[Any]:
 
     # TXT files
     txt_files = list(data_path.glob('**/*.txt'))
-    print(f"[INFO] Found {len(txt_files)} TXT files")
+    print(f"Found {len(txt_files)} TXT files")
     for txt_file in txt_files:
         try:
             loader = TextLoader(str(txt_file))
@@ -58,7 +56,7 @@ def load_all_documents(data_dir: str) -> List[Any]:
 
     # CSV files
     csv_files = list(data_path.glob('**/*.csv'))
-    print(f"[INFO] Found {len(csv_files)} CSV files")
+    print(f"Found {len(csv_files)} CSV files")
     for csv_file in csv_files:
         try:
             loader = CSVLoader(str(csv_file))
@@ -74,7 +72,7 @@ def load_all_documents(data_dir: str) -> List[Any]:
 
     # Excel files
     xlsx_files = list(data_path.glob('**/*.xlsx'))
-    print(f"[INFO] Found {len(xlsx_files)} Excel files")
+    print(f"Found {len(xlsx_files)} Excel files")
     for xlsx_file in xlsx_files:
         try:
             loader = UnstructuredExcelLoader(str(xlsx_file))
@@ -90,7 +88,7 @@ def load_all_documents(data_dir: str) -> List[Any]:
 
     # Word files
     docx_files = list(data_path.glob('**/*.docx'))
-    print(f"[INFO] Found {len(docx_files)} Word files")
+    print(f"Found {len(docx_files)} Word files")
     for docx_file in docx_files:
         try:
             loader = Docx2txtLoader(str(docx_file))
@@ -106,7 +104,7 @@ def load_all_documents(data_dir: str) -> List[Any]:
 
     # JSON files
     json_files = list(data_path.glob('**/*.json'))
-    print(f"[INFO] Found {len(json_files)} JSON files")
+    print(f"Found {len(json_files)} JSON files")
     for json_file in json_files:
         try:
             loader = JSONLoader(
@@ -132,7 +130,7 @@ def load_all_documents(data_dir: str) -> List[Any]:
         print(f"  source: {documents[0].metadata.get('source')}")
         print(f"  name: {documents[0].metadata.get('name')}")
         print(f"  type: {documents[0].metadata.get('type')}")
-        print(f"  Content preview: {documents[0].page_content[:200]}...")
+        # print(f"  Content preview: {documents[0].page_content[:250]}...")
     
     return documents
 
@@ -141,5 +139,5 @@ if __name__ == "__main__":
     docs = load_all_documents("data")
     print(f"\nLoaded {len(docs)} documents.")
     if docs:
-        print("\nFirst document metadata:", docs[0].metadata)
+        # print("\nFirst document metadata:", docs[0].metadata)
         print("\nFirst document preview:", docs[0].page_content[:200])

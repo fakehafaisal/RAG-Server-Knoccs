@@ -33,7 +33,7 @@ def initialize_rag(debug=False):
 # -------------------------
 def rebuild_knowledge_base(debug=True):  # Default debug=True for rebuilds
     print("\n" + "="*80)
-    print("REBUILDING KNOWLEDGE BASE")
+    print("BUILDING KNOWLEDGE BASE")
     print("="*80)
     
     global store, rag_search
@@ -45,14 +45,14 @@ def rebuild_knowledge_base(debug=True):  # Default debug=True for rebuilds
             chunk_overlap=256, 
             use_reranker=True,
             debug=debug  # Add debug flag
-        )
+)
     
     # Clear existing data
     store.clear()
     
     # Load and build
     docs = load_all_documents("data")
-    print(f"[INFO] Loaded {len(docs)} documents")
+    print(f"Loaded {len(docs)} documents")
     
     store.build_from_documents(docs)
     

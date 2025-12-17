@@ -1,0 +1,92 @@
+[
+  {
+    "query": "What is Pulse Unity's main business focus?",
+    "expected_answer": "Pulse Unity is a professional services company with capabilities in customer service and consulting. They emphasize professional excellence and remote work flexibility.",
+    "category": "company_info",
+    "difficulty": "easy"
+  },
+  {
+    "query": "Which companies have professional excellence certificates in our system?",
+    "expected_answer": "Multiple companies have certificates including Pulse Unity, Peak Atlas (Summit Certificate), BeaconPioneer, Peak Iron, and Zenith Atlas.",
+    "category": "company_info",
+    "difficulty": "easy"
+  },
+  {
+    "query": "What is BeaconPioneer's domain?",
+    "expected_answer": "BeaconPioneer's domain is beaconpioneer.example.com.",
+    "category": "company_info",
+    "difficulty": "easy"
+  },
+  {
+    "query": "Does Atlas Unity have an HR policy document?",
+    "expected_answer": "Yes, Atlas Unity has a Atlas Unity Human Resources.pdf document on file.",
+    "category": "document_lookup",
+    "difficulty": "easy"
+  },
+  {
+    "query": "List all companies that start with Peak",
+    "expected_answer": "Peak Iron and Peak Atlas are the companies in our system that start with Peak.",
+    "category": "company_list",
+    "difficulty": "easy"
+  },
+  {
+    "query": "Who are the contact persons that manage customer success at Knoccs?",
+    "expected_answer": "Multiple employees manage client relations including Ivan Johnson, ,Ray Brown, and Mallory Rodriguez.",
+    "category": "people_lookup",
+    "difficulty": "easy"
+  },
+  {
+    "query": "What are the key terms of the Pulse Unity Client Service Agreement?",
+    "expected_answer": "The Pulse Unity Client Service Agreement (Agreement #PSU-2024-CSA-0847, effective December 16, 2025, 12-month term) includes the following key terms: Services include Digital Transformation Consulting, Software Development, Data Analytics, Cloud Infrastructure Management, and Cybersecurity Services. Payment terms specify fees based on fixed-price milestones or time-and-materials billing, invoiced monthly in arrears or upon milestone completion, due within 30 days (1.5% monthly late fee). Intellectual Property: Client owns custom work upon full payment; Pulse Unity retains pre-existing tools and frameworks. Confidentiality obligations apply to both parties. Either party can terminate with 60 days notice or immediately for cause (material breach, insolvency, business closure). Warranties cover professional service delivery; liability is limited to total fees paid in preceding 12 months. Pulse Unity is an independent contractor; agreement governed by California law.",
+    "category": "agreement_analysis",
+    "difficulty": "medium"
+  },
+  {
+    "query": "Which companies have leave and attendance policies documented?",
+    "expected_answer": "Multiple companies have leave and attendance policies including Peak Iron (HR Leave), Atlas Unity (Attendance Policy), Keystone Echo (Leave Policy), and IronHarbor (Leave and Attendance Policy).",
+    "category": "document_search",
+    "difficulty": "medium"
+  },
+  {
+    "query": "Which clients have intellectual property or innovation-related policies?",
+    "expected_answer": "Nexus Crescent has an IP_Policy.pdf and Innovation_Award.pdf; Vertex Keystone has a Design_Award.pdf; Cloud Aurora has Policy_AI_Ethics.pdf.",
+    "category": "document_search",
+    "difficulty": "medium"
+  },
+    {
+    "query": "What are the compliance requirements for Vantage Crescent?",
+    "expected_answer": "Vantage Crescent's Compliance Manual outlines four primary compliance requirements for employees: (1) Material Non-Public Information (MNPI) - Employees must maintain information barriers between Private Equity and Public Markets desks, avoid discussing active deals in public areas, and are prohibited from personal trading on restricted company tickers. Trading on MNPI or tipping others is a federal crime. (2) Personal Account Dealing (PAD) - All employees must declare personal brokerage accounts and submit trade requests via StarCompli portal for pre-clearance before trading. A minimum 30-day holding period applies to all personal equity positions; day trading is prohibited. Failure to disclose accounts results in immediate termination and reporting to FINRA/SEC. (3) Anti-Money Laundering (AML) - The firm follows Know Your Customer (KYC) requirements; no cash deposits are accepted. Any transaction exceeding $10,000 involving a High-Risk Jurisdiction requires Enhanced Due Diligence (EDD). (4) Electronic Communications - All firm business communications must occur on firm-issued devices. WhatsApp and Signal are strictly prohibited for business use unless the corporate archiving wrapper is installed. All emails and Slack messages are archived for 7 years pursuant to SEC Rule 17a-4.",
+    "category": "compliance_requirements",
+    "difficulty": "medium"
+    },
+  {
+    "query": "What is the leave and attendance policy of Atlas Unity?",
+    "expected_answer": "Atlas Unity's Leave and Attendance Policy applies to all full-time and part-time employees. Key points include: Attendance requirements mandate on-time arrival and advance notice of absences. Leave types include annual leave (accrued monthly), sick leave (with medical certification), maternity/paternity leave, bereavement leave, unpaid leave, and company holidays. Leave requests must be submitted in advance. Excessive absenteeism may result in disciplinary action including termination. HR maintains records and reviews the policy annually.",
+    "category": "hr_policies",
+    "difficulty": "medium"
+  },
+  {
+    "query": "When are employees placed on MAL in Zenith Atlas?",
+    "expected_answer": "Upon return from any assignment lasting longer than 14 days, employees are placed on Mandatory Administrative Leave (MAL).",
+    "category": "hr_policies",
+    "difficulty": "easy"
+  },
+  {
+    "query": "List all the companies Knoccs is working with",
+    "expected_answer": "Knoccs works with: Beacon Pioneer, Atlas Unity, Peak Iron, Iron Harbor, Unity Pioneer, Pulse Unity, Vantage Nexus, Keystone Echo, Summit Atlas, Nexus Crescent, Iron Horizon, Zenith Atlas, Vantage Crescent, Core Beacon, Core Vantage, Echo Iron, Vertex Keystone, Peak Atlas, Cloud Aurora, and Core Echo.",
+    "category": "company_list",
+    "difficulty": "easy"
+  },
+  {
+    "query": "Which company does Heidi Smith work at?",
+    "expected_answer": "Heidi Smith works at Summit Atlas.",
+    "category": "people_lookup",
+    "difficulty": "easy"
+  },
+  {
+    "query": "Based on historical records, what type of incident occurs most frequently for Atlas Unity?",
+    "expected_answer": "Based on historical records, Incidents occur most frequently for Atlas Unity, with 310 recorded incidents.",
+    "category": "analytics",
+    "difficulty": "easy"
+  }
+]

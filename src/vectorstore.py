@@ -8,6 +8,7 @@ from src.embedding import EmbeddingPipeline
 import psycopg2
 from psycopg2.extras import execute_values
 from dotenv import load_dotenv
+from rank_bm25 import BM25Okapi
 
 load_dotenv()
 
@@ -18,11 +19,8 @@ def clean_text(text: str) -> str:
 
 class PgVectorStore:
     def __init__(self, 
-                embedding_model: str = "all-mpnet-base-v2", 
-                chunk_size: int = 1024, 
-                chunk_overlap: int = 256,
-                use_reranker: bool = True,
-                debug: bool = False):
+                embedding_model: str = "all-mpnet-base-v2", chunk_size: int = 1024, chunk_overlap: int = 256,
+                use_reranker: bool = True, debug: bool = False):
         
         self.embedding_model = embedding_model
         self.chunk_size = chunk_size
@@ -33,30 +31,23 @@ class PgVectorStore:
         # ------------------------------------------------------------
         # FIX: Proper model loading without meta tensor issues
         # ------------------------------------------------------------
-        print(f"[INFO] Loading embedding model '{embedding_model}'...")
+        print(f"Loading embedding model '{embedding_model}'...")
         
         # Load model directly without device specification first
         self.model = SentenceTransformer(embedding_model)
         
-        # Then move to CPU if needed
-        if torch.cuda.is_available():
-            print("[INFO] CUDA available, using GPU")
-            self.model = self.model.cuda()
-        else:
-            print("[INFO] Using CPU")
-            self.model = self.model.cpu()
-        
+        self.model = self.model.cpu()
         self.model.eval()
         
         # Test encoding to ensure model works
-        try:
-            test_emb = self.model.encode(["test"], convert_to_numpy=True)
-            if np.isnan(test_emb).any():
-                raise ValueError("Model producing NaN values")
-            print(f"[INFO] Model test successful, embedding dimension: {test_emb.shape}")
-        except Exception as e:
-            print(f"[ERROR] Model initialization failed: {e}")
-            raise
+        # try:
+        #     test_emb = self.model.encode(["test"], convert_to_numpy=True)
+        #     if np.isnan(test_emb).any():
+        #         raise ValueError("Model producing NaN values")
+        #     # print(f"[INFO] Model test successful, embedding dimension: {test_emb.shape}")
+        # except Exception as e:
+        #     print(f"[ERROR] Model initialization failed: {e}")
+        #     raise
 
         # ------------------------------------------------------------
         # Reranker with error handling
@@ -64,7 +55,7 @@ class PgVectorStore:
         if use_reranker:
             try:
                 self.reranker = CrossEncoder('cross-encoder/ms-marco-MiniLM-L-6-v2')
-                print(f"[INFO] Loaded reranker: cross-encoder/ms-marco-MiniLM-L-6-v2")
+                print("Loaded reranker: cross-encoder/ms-marco-MiniLM-L-6-v2")
             except Exception as e:
                 print(f"[WARNING] Failed to load reranker: {e}")
                 print("[WARNING] Continuing without reranker")
@@ -78,11 +69,10 @@ class PgVectorStore:
             'database': os.getenv('PGVECTOR_DATABASE', 'postgres'),
             'user': os.getenv('PGVECTOR_USER', 'postgres'),
             'password': os.getenv('PGVECTOR_PASSWORD', 'postgres'),
-            'sslmode': 'require'
-        }
+            'sslmode': 'require'}
 
         self._init_database()
-        print(f"[INFO] Loaded embedding model: {embedding_model}")
+        # print(f"[INFO] Loaded embedding model: {embedding_model}")
 
     def _get_connection(self):
         return psycopg2.connect(**self.db_config)
@@ -137,12 +127,11 @@ class PgVectorStore:
 
     def build_from_documents(self, documents: List[Any]):
         """Insert documents, chunks, and embeddings"""
-        print(f"[INFO] Building vector store from {len(documents)} documents...")
+        print(f"Building vector store from {len(documents)} documents...")
         emb_pipe = EmbeddingPipeline(
             model_name=self.embedding_model,
             chunk_size=self.chunk_size,
-            chunk_overlap=self.chunk_overlap
-        )
+            chunk_overlap=self.chunk_overlap)
         chunks = emb_pipe.chunk_documents(documents)
         embeddings = emb_pipe.embed_chunks(chunks)
 
@@ -234,7 +223,7 @@ class PgVectorStore:
                 raise ValueError(f"Mismatch: {len(chunk_ids)} chunks inserted but {len(embeddings)} embeddings generated!")
 
             # Insert embeddings
-            print(f"[INFO] Inserting {len(chunk_ids)} embeddings...")
+            # print(f"[INFO] Inserting {len(chunk_ids)} embeddings...")
             embedding_data = [(chunk_id, emb.tolist()) for chunk_id, emb in zip(chunk_ids, embeddings)]
             execute_values(
                 cur,
@@ -286,9 +275,7 @@ class PgVectorStore:
             conn.close()
 
     def query(self, query_text: str, top_k: int = 15, initial_k: int = 50, use_hybrid: bool = True) -> List[Dict]:
-        """
-        Hybrid retrieval: BM25 + Dense embeddings + Reranking
-        """
+        """Hybrid retrieval: BM25 + Dense embeddings + Reranking"""
         query_text = query_text.strip()
         if not query_text:
             print("[ERROR] Empty query text")
@@ -337,11 +324,7 @@ class PgVectorStore:
         return self.search(query_emb, top_k=top_k)
 
     def search_bm25(self, query_text: str, top_k: int = 15) -> List[Dict]:
-        """
-        BM25 keyword search (good for names, dates, exact matches)
-        """
-        from rank_bm25 import BM25Okapi
-        
+        """BM25 keyword search (good for names, dates, exact matches)"""
         conn = self._get_connection()
         cur = conn.cursor()
         
@@ -350,8 +333,7 @@ class PgVectorStore:
             cur.execute("""
                 SELECT ch.id, ch.text, d.name, d.type, d.source
                 FROM chunks ch
-                JOIN documents d ON ch.document_id = d.id
-            """)
+                JOIN documents d ON ch.document_id = d.id""")
             
             rows = cur.fetchall()
             if not rows:
