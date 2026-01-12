@@ -46,8 +46,8 @@ class DeepEvalService:
             self.LLMTestCase = LLMTestCase
             self.LLMTestCaseParams = LLMTestCaseParams
             
-            print("DeepEval initialized with OpenAI GPT-5 + 3 standard metrics for KNOCCS")
-            print("Running in referenceless mode (no ground truth required)")
+            # print("DeepEval initialized with OpenAI GPT-5")
+            # print("Running in referenceless mode (no ground truth required)")
             
         except ImportError as e:
             raise ImportError(

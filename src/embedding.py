@@ -14,16 +14,15 @@ class EmbeddingPipeline:
     
     def clean_pdf_text(self, text: str) -> str:
         """Clean common PDF extraction artifacts"""
-        text = re.sub(r'^\d+$', '', text, flags=re.MULTILINE)  #remove page numbers (standalone numbers on their own line)
-        text = re.sub(r'\n{3,}', '\n\n', text)   #remove excessive whitespace
-        text = re.sub(r'(\w+)-\n(\w+)', r'\1\2', text)   #remove hyphenation at line breaks
+        text = re.sub(r'^\d+$', '', text, flags=re.MULTILINE)  # remove page numbers
+        text = re.sub(r'\n{3,}', '\n\n', text)  # remove excessive whitespace
+        text = re.sub(r'(\w+)-\n(\w+)', r'\1\2', text)  # remove hyphenation at line breaks
         
-        #remove standalone mathematical symbols/formulas (heuristic)
-        #remove lines that are mostly symbols and no words
+        # remove lines that are mostly symbols and no words
         lines = text.split('\n')
         cleaned_lines = []
         for line in lines:
-            alphanum = sum(c.isalnum() for c in line)   #count alphanumeric vs symbols
+            alphanum = sum(c.isalnum() for c in line)
             total = len(line.strip())
             if total > 0 and alphanum / total > 0.3:  # At least 30% alphanumeric
                 cleaned_lines.append(line)
@@ -49,25 +48,27 @@ class EmbeddingPipeline:
         if line.endswith(':') and len(line) < 100:
             return True
         
-        # Title Case headers (first word capitalized, most words capitalized)
+        # Title Case headers
         words = line.split()
-        if len(words) <= 10:  # Headers are usually short
+        if len(words) <= 10:
             cap_words = sum(1 for w in words if w and w[0].isupper())
-            if cap_words / len(words) > 0.6:  # 60% words capitalized
+            if cap_words / len(words) > 0.6:
                 return True
         
-        # Check if next line is paragraph text (starts lowercase or has multiple words)
+        # Check if next line is paragraph text
         if next_line:
             next_clean = next_line.strip()
             if next_clean and (next_clean[0].islower() or len(next_clean.split()) > 5):
-                # Current line might be header if it's short and next is paragraph
                 if len(line.split()) <= 8:
                     return True
         
         return False
     
     def chunk_documents(self, documents: List[Any]) -> List[Any]:
-        """Chunk documents with improved header detection and cleaning"""
+        """
+        Chunk documents with improved header detection and cleaning.
+        Preserves company_id and other critical metadata through chunking.
+        """
         all_chunks = []
         
         # Use semantic splitter with multiple separators
@@ -90,13 +91,30 @@ class EmbeddingPipeline:
         )
         
         for doc_idx, doc in enumerate(documents):
+            # Extract critical metadata BEFORE chunking
+            company_id = doc.metadata.get('company_id')
+            source = doc.metadata.get('source', f'doc_{doc_idx}')
+            doc_name = doc.metadata.get('name', 'unknown')
+            doc_type = doc.metadata.get('type', 'unknown')
+            
+            if company_id is None:
+                print(f"[WARNING] Document '{doc_name}' has no company_id assigned!")
+                continue
+            
             # Clean the PDF text first
             cleaned_text = self.clean_pdf_text(doc.page_content)
             
             # Split into initial chunks
+            # Pass metadata to preserve company_id through LangChain
             initial_chunks = text_splitter.create_documents(
                 [cleaned_text],
-                metadatas=[doc.metadata])
+                metadatas=[{
+                    'company_id': company_id,
+                    'source': source,
+                    'name': doc_name,
+                    'type': doc_type
+                }]
+            )
             
             # Post-process chunks: add section context
             lines = cleaned_text.split('\n')
@@ -108,9 +126,8 @@ class EmbeddingPipeline:
                 if self.is_section_header(line, next_line):
                     current_section = line.strip()
             
-            # Add chunks with metadata
+            # Add chunks with enriched metadata
             for chunk_idx, chunk in enumerate(initial_chunks):
-                # Filter out chunks that are mostly garbage
                 text = chunk.page_content.strip()
                 
                 # Skip if chunk is too short or mostly symbols
@@ -121,15 +138,26 @@ class EmbeddingPipeline:
                 if alphanum_ratio < 0.6:  # Less than 60% alphanumeric + spaces
                     continue
                 
-                # Add section context to metadata
+                # Update metadata with all required fields
                 chunk.metadata.update({
+                    'company_id': company_id,  # Ensure company_id is preserved
+                    'source': source,
+                    'name': doc_name,
+                    'type': doc_type,
                     'chunk_id': f"{doc_idx}_{chunk_idx}",
-                    'document': doc.metadata.get('source', f'doc_{doc_idx}'),
-                    'section': current_section})
+                    'document': source,  # Used for mapping to document in vectorstore
+                    'section': current_section
+                })
                 
                 all_chunks.append(chunk)
         
-        print(f"[INFO] Created {len(all_chunks)} cleaned chunks")
+        print(f"[INFO] Created {len(all_chunks)} cleaned chunks from {len(documents)} documents")
+        
+        # Validate that all chunks have company_id
+        chunks_without_company = [c for c in all_chunks if c.metadata.get('company_id') is None]
+        if chunks_without_company:
+            print(f"[WARNING] {len(chunks_without_company)} chunks missing company_id!")
+        
         return all_chunks
     
     def embed_chunks(self, chunks: List[Any]):
@@ -138,3 +166,4 @@ class EmbeddingPipeline:
         embeddings = self.model.encode(texts, convert_to_numpy=True, show_progress_bar=True)
         print(f"[INFO] Generated embeddings with shape: {embeddings.shape}")
         return embeddings
+    

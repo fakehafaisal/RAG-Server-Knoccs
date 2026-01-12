@@ -42,12 +42,14 @@ class QueryRequest(BaseModel):
     top_k: Optional[int] = 15
     use_query_expansion: Optional[bool] = False
     return_sources: Optional[bool] = True
+    conversation_history: Optional[List[Dict]] = []
 
 class QueryResponse(BaseModel):
     answer: str
     sources: Optional[List[Dict]] = None
     timestamp: str
     query_expansions: Optional[List[str]] = None
+    conversation_history: Optional[List[Dict]] = []
 
 class RebuildRequest(BaseModel):
     chunk_size: Optional[int] = 1024
@@ -80,7 +82,7 @@ async def startup_event():
         # Initialize DeepEval service (loads ground truth if available)
         try:
             deepeval_service = DeepEvalService(rag_search, ground_truth_file=GROUND_TRUTH_FILE)
-            print("[DeepEval service initialized with ground truth support")
+            print("DeepEval initialized with OpenAI GPT-5")
         except Exception as e:
             print(f"[WARNING] DeepEval initialization failed: {e}")
             print("[WARNING] Continuing without DeepEval - evaluation endpoint may fail")
@@ -159,11 +161,12 @@ def query_rag(request: QueryRequest):
         if request.use_query_expansion:
             query_expansions = rag_search.expand_query(request.query)
 
-        # Get answer from RAG
-        answer = rag_search.search_and_summarize(
+        # Get answer from RAG (now returns tuple: answer, conversation_history)
+        answer, updated_history = rag_search.search_and_summarize(
             request.query,
             top_k=request.top_k,
-            initial_k=request.top_k * 3
+            initial_k=request.top_k * 3,
+            conversation_history=request.conversation_history  # Pass client's conversation history
         )
 
         # Get sources if requested
@@ -185,7 +188,8 @@ def query_rag(request: QueryRequest):
             answer=answer,
             sources=sources,
             timestamp=datetime.utcnow().isoformat() + "Z",
-            query_expansions=query_expansions
+            query_expansions=query_expansions,
+            conversation_history=updated_history
         )
 
     except Exception as e:
