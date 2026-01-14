@@ -203,7 +203,7 @@ def query_rag(request: QueryRequest):
 def evaluate_query_deepeval(request: EvaluateRequest):
     """
     Evaluate a query using DeepEval metrics (3 standard RAG metrics)
-    Referenceless evaluation - no ground truth needed
+    Reference-based evaluation - uses ground truth from ground_truth.json
     
     Returns metrics scores: Answer Relevancy, Faithfulness, Contextual Precision
     """
@@ -260,7 +260,7 @@ def evaluate_query_deepeval(request: EvaluateRequest):
         response = {
             "query": result['query'],
             "answer": result['answer'],
-            "expected_answer": result.get('expected_answer'),  # Always None in referenceless mode
+            "expected_answer": result.get('expected_answer'),  # From ground truth if match found
             "num_retrieved_chunks": result['num_retrieved_chunks'],
             "metrics": metrics_summary,
             "timestamp": result['timestamp']
