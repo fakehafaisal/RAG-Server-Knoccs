@@ -1,4 +1,3 @@
-
 import os
 import json
 from dotenv import load_dotenv
@@ -109,6 +108,8 @@ class DeepEvalService:
         print(f"[INFO] No matching ground truth found (best match: {best_ratio:.2%})")
         return None
 
+
+
     def evaluate_query(self, query: str) -> Dict:
         # Step 1: Retrieve results and generate answer
         try:
@@ -191,56 +192,25 @@ class DeepEvalService:
             print("[INFO] → Evaluating Faithfulness (Hallucination Check)...")
             print("[INFO] (This metric requires API calls - may take 20-30 seconds...)")
             
-            import signal
+            metric = self.FaithfulnessMetric(
+                model=self.openai_model, 
+                threshold=0.7,
+                async_mode=False
+            )
+            metric.measure(test_case)
             
-            def timeout_handler(signum, frame):
-                raise TimeoutError("Faithfulness metric evaluation timed out")
-            
-            # Set a 60-second timeout for this metric
-            signal.signal(signal.SIGALRM, timeout_handler)
-            signal.alarm(60)
-            
-            try:
-                metric = self.FaithfulnessMetric(
-                    model=self.openai_model, 
-                    threshold=0.7,
-                    async_mode=False
-                )
-                metric.measure(test_case)
-                
-                signal.alarm(0)  # Cancel the alarm
-                
-                score = float(metric.score) if metric.score is not None else 0.0
-                results["faithfulness"] = {
-                    "score": score,
-                    "passed": metric.is_successful(),
-                    "reason": getattr(metric, 'reason', None),
-                    "description": "Is the answer factually consistent with the retrieved context?"
-                }
-                status = "✓ PASS" if metric.is_successful() else "✗ FAIL"
-                print(f"[SUCCESS] Faithfulness: {score:.4f} {status}")
-                
-            except TimeoutError as te:
-                signal.alarm(0)  # Cancel the alarm
-                print(f"[ERROR] Faithfulness metric timed out (exceeded 60 seconds)")
-                results["faithfulness"] = {
-                    "error": "Evaluation timed out (API latency)", 
-                    "score": 0.0, 
-                    "passed": False,
-                    "description": "Is the answer factually consistent with the retrieved context?"
-                }
-            except Exception as e:
-                signal.alarm(0)  # Cancel the alarm
-                print(f"[ERROR] Faithfulness failed: {str(e)}")
-                results["faithfulness"] = {
-                    "error": str(e), 
-                    "score": 0.0, 
-                    "passed": False,
-                    "description": "Is the answer factually consistent with the retrieved context?"
-                }
+            score = float(metric.score) if metric.score is not None else 0.0
+            results["faithfulness"] = {
+                "score": score,
+                "passed": metric.is_successful(),
+                "reason": getattr(metric, 'reason', None),
+                "description": "Is the answer factually consistent with the retrieved context?"
+            }
+            status = "✓ PASS" if metric.is_successful() else "✗ FAIL"
+            print(f"[SUCCESS] Faithfulness: {score:.4f} {status}")
             
         except Exception as e:
-            print(f"[ERROR] Faithfulness setup failed: {str(e)}")
+            print(f"[ERROR] Faithfulness failed: {str(e)}")
             results["faithfulness"] = {
                 "error": str(e), 
                 "score": 0.0, 
@@ -253,55 +223,24 @@ class DeepEvalService:
             print("[INFO] → Evaluating Contextual Precision (Retriever Quality)...")
             print("[INFO] (This metric requires API calls - may take 20-30 seconds...)")
             
-            import signal
+            metric = self.ContextualPrecisionMetric(
+                model=self.openai_model, 
+                threshold=0.7
+            )
+            metric.measure(test_case)
             
-            def timeout_handler(signum, frame):
-                raise TimeoutError("Contextual Precision metric evaluation timed out")
-            
-            # Set a 60-second timeout for this metric
-            signal.signal(signal.SIGALRM, timeout_handler)
-            signal.alarm(60)
-            
-            try:
-                metric = self.ContextualPrecisionMetric(
-                    model=self.openai_model, 
-                    threshold=0.7
-                )
-                metric.measure(test_case)
-                
-                signal.alarm(0)  # Cancel the alarm
-                
-                score = float(metric.score) if metric.score is not None else 0.0
-                results["contextual_precision"] = {
-                    "score": score,
-                    "passed": metric.is_successful(),
-                    "reason": getattr(metric, 'reason', None),
-                    "description": "Are the retrieved chunks focused and relevant without noise?"
-                }
-                status = "✓ PASS" if metric.is_successful() else "✗ FAIL"
-                print(f"[SUCCESS] Contextual Precision: {score:.4f} {status}")
-                
-            except TimeoutError as te:
-                signal.alarm(0)  # Cancel the alarm
-                print(f"[ERROR] Contextual Precision metric timed out (exceeded 60 seconds)")
-                results["contextual_precision"] = {
-                    "error": "Evaluation timed out (API latency)", 
-                    "score": 0.0, 
-                    "passed": False,
-                    "description": "Are the retrieved chunks focused and relevant without noise?"
-                }
-            except Exception as e:
-                signal.alarm(0)  # Cancel the alarm
-                print(f"[ERROR] Contextual Precision failed: {str(e)}")
-                results["contextual_precision"] = {
-                    "error": str(e), 
-                    "score": 0.0, 
-                    "passed": False,
-                    "description": "Are the retrieved chunks focused and relevant without noise?"
-                }
+            score = float(metric.score) if metric.score is not None else 0.0
+            results["contextual_precision"] = {
+                "score": score,
+                "passed": metric.is_successful(),
+                "reason": getattr(metric, 'reason', None),
+                "description": "Are the retrieved chunks focused and relevant without noise?"
+            }
+            status = "✓ PASS" if metric.is_successful() else "✗ FAIL"
+            print(f"[SUCCESS] Contextual Precision: {score:.4f} {status}")
             
         except Exception as e:
-            print(f"[ERROR] Contextual Precision setup failed: {str(e)}")
+            print(f"[ERROR] Contextual Precision failed: {str(e)}")
             results["contextual_precision"] = {
                 "error": str(e), 
                 "score": 0.0, 
