@@ -1,6 +1,9 @@
 .env
+.env.*.local
 data/
 __pycache__/
 *.pyc
+*.log
 .DS_Store
 .vscode/
+.deepeval/

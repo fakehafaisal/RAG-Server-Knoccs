@@ -23,40 +23,310 @@
     "category": "agreement_analysis",
     "difficulty": "medium"
   },
-{
+  {
     "query": "What is the leave and attendance policy of Atlas Unity?",
     "expected_answer": "Atlas Unity's Leave and Attendance Policy applies to all full-time and part-time employees. Key points include: Attendance requirements mandate on-time arrival and advance notice of absences. Leave types include annual leave (accrued monthly), sick leave (with medical certification), maternity/paternity leave, bereavement leave, unpaid leave, and company holidays. Leave requests must be submitted in advance. Excessive absenteeism may result in disciplinary action including termination. HR maintains records and reviews the policy annually.",
     "category": "hr_policies",
     "difficulty": "medium"
-},
-{
+  },
+  {
     "query": "What are the primary concerns Peak Iron is experiencing with their systems?",
     "expected_answer": "Peak Iron has reported several system concerns including SaaS platform downtime and outages impacting user access, data visualization problems in PowerPoint 2021 after recent updates, and data analytics tools malfunctions affecting investment strategies due to software compatibility issues.",
     "category": "company_issues",
     "difficulty": "medium"
-},
-{
+  },
+  {
     "query": "Which company does Heidi Smith work at?",
     "expected_answer": "Heidi Smith works at Summit Atlas.",
     "category": "people_lookup",
     "difficulty": "easy"
-},
-{
-  "query": "What types of support issues are Atlas Unity experiencing?",
-  "expected_answer": "Atlas Unity has reported several support issues including security policy adherence problems on Windows 10 Pro devices, slow investment optimization platform performance due to increased data volume, and requests for data analytics service optimization.",
-  "category": "company_issues",
-  "difficulty": "medium"
-},
-{
-  "query": "What security incidents has Vantage Nexus reported?",
-  "expected_answer": "Vantage Nexus has reported multiple security incidents including a data security incident at a healthcare organization leading to compromise of medical records from firewall misconfiguration, unapproved access tries on medical data systems due to software vulnerabilities, and unauthorized access to patient data potentially due to outdated system vulnerabilities.",
-  "category": "security_incidents",
-  "difficulty": "medium"
-},
-{
-  "query": "What is the eligibility criteria for remote work at Keystone Echo?",
-  "expected_answer": "Remote work is available to all full-time employees who have completed their initial 90-day probationary period. However, there's an important exception: roles that require physical interaction with hardware (such as Server Technicians) may have limited remote eligibility.",
-  "category": "hr_policies",
-  "difficulty": "medium"
-}
+  },
+  {
+    "query": "What types of support issues are Atlas Unity experiencing?",
+    "expected_answer": "Atlas Unity has reported several support issues including security policy adherence problems on Windows 10 Pro devices, slow investment optimization platform performance due to increased data volume, and requests for data analytics service optimization.",
+    "category": "company_issues",
+    "difficulty": "medium"
+  },
+  {
+    "query": "What security incidents has Vantage Nexus reported?",
+    "expected_answer": "Vantage Nexus has reported multiple security incidents including a data security incident at a healthcare organization leading to compromise of medical records from firewall misconfiguration, unapproved access tries on medical data systems due to software vulnerabilities, and unauthorized access to patient data potentially due to outdated system vulnerabilities.",
+    "category": "security_incidents",
+    "difficulty": "medium"
+  },
+  {
+    "query": "What is the eligibility criteria for remote work at Keystone Echo?",
+    "expected_answer": "Remote work is available to all full-time employees who have completed their initial 90-day probationary period. However, there's an important exception: roles that require physical interaction with hardware (such as Server Technicians) may have limited remote eligibility.",
+    "category": "hr_policies",
+    "difficulty": "medium"
+  },
+  {
+    "query": "What is the main business focus of Beacon Pioneer?",
+    "expected_answer": "Beacon Pioneer is a technology solutions company focused on AI, cloud computing, and cybersecurity for businesses.",
+    "category": "company_info",
+    "difficulty": "easy"
+  },  
+  {
+    "query": "What are the benefit eligibility requirements for Beacon Pioneer employees?",
+    "expected_answer": "Beacon Pioneer employees are eligible for Health Medical Insurance after 30 days, 15 PTO days immediately, 401(k) after 90 days, and Tuition Reimbursement after 1 year, as outlined in the Employee Handbook Policy.",
+    "category": "benefit_eligibility",
+    "difficulty": "easy"
+  },
+  {
+    "query": "What is the governing law specified in Beacon Pioneer's NDA?",
+    "expected_answer": "The Beacon Pioneer NDA specifies that it is governed by the laws of the State of California.",
+    "category": "agreement_terms",
+    "difficulty": "easy"
+  },
+  {
+    "query": "What did Ray Brown request confirmation about in the Beacon Pioneer conversation on November 21, 2025?",
+    "expected_answer": "Ray Brown requested confirmation whether the issue affects all users or a subset, and asked for screenshots if possible.",
+    "category": "support_request",
+    "difficulty": "easy"
+  },
+  {
+    "query": "What billing issue did Beacon Pioneer report regarding payment accuracy?",
+    "expected_answer": "Beacon Pioneer reported that inaccurate billing summaries were impacting the precision of payments. The support team requested details of the discrepancies, including date range and account number, to investigate further.",
+    "category": "billing_issue",
+    "difficulty": "easy"
+  },
+  {
+    "query": "What are the attendance requirements for employees at Atlas Unity?",
+    "expected_answer": "Attendance requirements at Atlas Unity: - Arrive on time for scheduled shifts. - Notify your supervisor in advance of any absence. - Maintain accurate time records.",
+    "category": "attendance_policy",
+    "difficulty": "easy"
+  },
+  {
+    "query": "What behaviors are prohibited for employees at Atlas Unity according to the Human Resources Policy?",
+    "expected_answer": "The following behaviors are strictly prohibited for employees at Atlas Unity: - Harassment, discrimination, or bullying based on race, gender, age, religion, etc. - Use of company resources for personal gain. - Falsification of records or reports. - Substance abuse during work hours. - Unauthorized disclosure of sensitive information. - Theft or misuse of company property. - Disruptive or violent behavior.",
+    "category": "hr_policy",
+    "difficulty": "easy"
+  },
+  {
+    "query": "What are Atlas Unity's sustainability goals for 2026?",
+    "expected_answer": "Atlas Unity's sustainability goals for 2026 include achieving net-zero emissions, increasing community investments by a specified percentage, and enhancing supplier sustainability audits, as outlined in the Sustainability Policy document.",
+    "category": "sustainability_goals",
+    "difficulty": "easy"
+  },
+  {
+    "query": "What support issue did Atlas Unity report regarding their investment optimization platform?",
+    "expected_answer": "Atlas Unity reported sluggish data processing in their investment optimization platform, likely due to increased data volume. Despite server restarts and network checks, the issue persisted and was hindering timely investment decisions.",
+    "category": "support_issue",
+    "difficulty": "easy"
+  },
+  {
+    "query": "Why did Atlas Unity ask for integration support for their project management tools?",
+    "expected_answer": "Atlas Unity has requested integration support involving: Joomla, TYPO3, Visual Studio Code, Monday.com, DataRobot Redis 6.2",
+    "category": "integration_request",
+    "difficulty": "easy"
+  },
+  {
+    "query": "Why did Arthur P. Carbon receive the Certificate of Excellence at Peak Iron in 2025?",
+    "expected_answer": "Arthur P. Carbon received the Certificate of Excellence at Peak Iron in 2025 in recognition of his outstanding performance and dedication regarding safety compliance and operational efficiency during the fiscal year.",
+    "category": "employee_recognition",
+    "difficulty": "easy"
+  },
+  {
+    "query": "What is the annual leave entitlement for permanent employees at Peak Iron based on years of service?",
+    "expected_answer": "Permanent employees at Peak Iron are entitled to paid annual leave as follows: 0–2 years of service: 15 days, 3–5 years: 20 days, and more than 5 years: 25 days.",
+    "category": "leave_policy",
+    "difficulty": "easy"
+  },
+  {
+    "query": "When was the latest Peak Iron memo dated?",
+    "expected_answer": "December 16, 2025.",
+    "category": "company_memo",
+    "difficulty": "easy"
+  },
+  {
+    "query": "What issue caused the SaaS platform outage at Peak Iron in October 2025?",
+    "expected_answer": "The SaaS platform outage at Peak Iron in October 2025 was caused by server overload or a software bug, which was temporarily resolved by restarting the servers to clear the cache.",
+    "category": "incident_report",
+    "difficulty": "medium"
+  },
+  {
+    "query": "What was the response to the email 'Request for Investigation of Potential Security Breach in Hospital Systems' from Peak Iron?",
+    "expected_answer": "We will investigate the security breach and can be contacted at <tel_num> to discuss the next steps. Please schedule a call with us to resolve the issue promptly.",
+    "category": "incident_response",
+    "difficulty": "medium"
+  },
+  {
+    "query": "What are the scope of services defined in Iron Harbor's Client Agreement folder?",
+    "expected_answer": "The Client Agreement defines the scope of services as: Software development and consulting; Data analytics and AI solutions; Infrastructure and cloud advisory; Technical documentation and support.",
+    "category": "client_agreement",
+    "difficulty": "medium"
+  },
+  {
+    "query": "What are the core values of Iron Harbor?",
+    "expected_answer": "Iron Harbor's core values are: Integrity; Innovation; Reliability; Excellence.",
+    "category": "company_values",
+    "difficulty": "easy"
+  },
+  {
+    "query": "What is the policy on professional behavior that every employee at Iron Harbor must adhere to?",
+    "expected_answer": "Iron Harbor's professional behavior expectations for all employees are: Act with integrity and honesty; Respect colleagues and clients; Avoid conflicts of interest.",
+    "category": "employee_conduct",
+    "difficulty": "easy"
+  },
+  {
+    "query": "What was the proposed response to the security breach at Iron Harbor in October 2025?",
+    "expected_answer": "The proposed response was to schedule a short call to gather more details and expedite a fix for the security breach impacting patient records.",
+    "category": "incident_response",
+    "difficulty": "easy"
+  },
+  {
+    "query": "Which tools did Iron Harbor request for brand support according to the RAG?",
+    "expected_answer": "- H2O.ai - Oracle Database 19c",
+    "category": "brand_support",
+    "difficulty": "medium"
+  },
+  {
+    "query": "What are the core domains Unity Pioneer works on?",
+    "expected_answer": "Unity Pioneer's core domains are: Technology Innovation; Digital Transformation; Research and Development; Social Impact Solutions.",
+    "category": "company_domains",
+    "difficulty": "easy"
+  },
+  {
+    "query": "What are the workplace conduct expectations for employees?",
+    "expected_answer": "Employees are expected to: Maintain professional behavior; Protect company assets and data; Communicate respectfully.",
+    "category": "workplace_conduct",
+    "difficulty": "easy"
+  },
+  {
+    "query": "What is the scope of recognition for the holder of the certificate at Unity Pioneer?",
+    "expected_answer": "The holder of this certificate has demonstrated: Professional competence; Ethical conduct; Commitment to project objectives.",
+    "category": "certificate_recognition",
+    "difficulty": "easy"
+  },
+  {
+    "query": "What was the Hospital Systems Security Features Inquiry Email about that Unity Pioneer sent?",
+    "expected_answer": "The email inquired about the security features available in hospital systems, specifically seeking details on data protection, access controls, and compliance with healthcare regulations.",
+    "category": "email_inquiry",
+    "difficulty": "medium"
+  },
+  {
+    "query": "What were the key performance indicators for Pulse Unity in 2024?",
+    "expected_answer": "Pulse Unity’s key performance indicators for 2024 were: Revenue: $135.0M; EBITDA margin: 18%; Employees: 500+; Client retention: 94%; Project success rate: 97%; Net Promoter Score (NPS): 72; Average project size: $485K; Repeat business: 78%; Average utilization rate: 82%; Revenue per employee: $270K; Average project velocity: 42 points; Training hours per employee: 85; Certification achievement rate: 92%.",
+    "category": "kpi_report",
+    "difficulty": "medium"
+  },
+  {
+    "query": "How much did Pulse Unity invest in R&D activities in 2024 and in which domains?",
+    "expected_answer": "In 2024, Pulse Unity invested $8.1 million in R&D (6% of revenue), focused on: AI/ML (advanced algorithms for predictive maintenance and anomaly detection); Quantum computing (quantum algorithms for optimization problems); Blockchain (decentralized identity and supply chain traceability); Edge computing (low-latency processing for IoT and autonomous systems); Green tech (carbon footprint tracking and sustainability optimization tools).",
+    "category": "rnd_investment",
+    "difficulty": "medium"
+  },
+  {
+    "query": "What are the goals of Pulse Unity's major geographic expansion initiatives in 2025?",
+    "expected_answer": "2025 priorities and targets - Open a new office in Tokyo, Japan. - Expand Singapore operations by 50%. - Establish partnerships in Australia and India. - Increase EMEA revenue by 35%.",
+    "category": "geographic_expansion",
+    "difficulty": "medium"
+  },
+  {
+    "query": "What does Pulse Unity cover in travel reimbursement for required in-person attendance?",
+    "expected_answer": "For required in-person attendance, Pulse Unity covers: airfare or mileage reimbursement per company travel policy; hotel accommodations for overnight stays; ground transportation (airport transfers, parking, rideshare); meals per company per diem rates; and reasonable expenses incurred during business travel. Employees should book travel through the company portal and obtain manager pre-approval for expenses exceeding standard allowances.",
+    "category": "travel_policy",
+    "difficulty": "medium"
+  },
+  {
+    "query": "Which advanced training certificate did Sophia Chen receive from Vantage Nexus Academy, and in what field?",
+    "expected_answer": "Sophia Chen received a Certificate of Completion for successfully completing the advanced training course in Enterprise Blockchain Architecture from Vantage Nexus Academy.",
+    "category": "certificate_achievement",
+    "difficulty": "easy"
+  },
+  {
+    "query": "What are the data security requirements for remote employees at Vantage Nexus?",
+    "expected_answer": "Remote employees at Vantage Nexus must: access all company data exclusively through the Nexus Secure VPN (NetShield); never use unsecured public Wi-Fi without VPN; and use only company-issued MacBooks or ThinkPads for client work, with personal devices prohibited from accessing the 'Vantage Core' database.",
+    "category": "data_security_policy",
+    "difficulty": "medium"
+  },
+  {
+    "query": "What are the key sector trends highlighted in the Market Horizon Report by Vantage Nexus?",
+    "expected_answer": "The Market Horizon Report highlights that generative AI tools have become core infrastructure, with 85% of Fortune 500 companies integrating LLMs into customer support. In Green Tech, investments in carbon capture technology have doubled, and Vantage Nexus advises clients to diversify into hydrogen-based energy storage startups.",
+    "category": "sector_analysis",
+    "difficulty": "medium"
+  },
+  {
+    "query": "Who were the provider and client parties in the Master Services Agreement for Keystone Echo?",
+    "expected_answer": "The provider was Keystone Echo Solutions Ltd. (represented by Elena Rostova, Director of Operations), and the client was Nebula Dynamics Corp. (represented by Julian Vance, Chief Technology Officer).",
+    "category": "contract_parties",
+    "difficulty": "easy"
+  },
+  {
+    "query": "Why was Marcus Thorne awarded the Certificate of Achievement by Keystone Echo?",
+    "expected_answer": "Marcus Thorne received the Certificate of Achievement from Keystone Echo in recognition of outstanding performance and dedication during the Q4 Strategic Initiative Project.",
+    "category": "employee_award",
+    "difficulty": "easy"
+  },
+  {
+    "query": "What is the code of conduct for digital spaces at Keystone Echo?",
+    "expected_answer": "Harassment or discrimination in digital channels (Slack, Zoom, Email) is treated with the same severity as physical incidents. Video is encouraged but not mandatory during internal calls to reduce fatigue, but is mandatory for client calls. No meetings may be recorded without the verbal consent of all attendees.",
+    "category": "code_of_conduct",
+    "difficulty": "medium"
+  },
+  {
+    "query": "What is the annual paid time off (PTO) policy at Keystone Echo, and how does the accrual and carry-over system work for different tenure levels?",
+    "expected_answer": "Keystone Echo uses a tiered annual PTO accrual based on tenure. PTO covers vacation, personal business, and mental health days. Accrual and maximum carry-over are:\n\n0–2 years: 20 days per year; up to 5 days may carry over\n2-5 years: 25 days per year; up to 10 days may carry over\n5+ years: 30 days per year; up to 15 days may carry over",
+    "category": "pto_policy",
+    "difficulty": "easy"
+  },
+  {
+    "query": "Who were the provider and client parties in the Master Services Agreement for Keystone Echo?",
+    "expected_answer": "The provider was Keystone Echo Solutions Ltd. (represented by Elena Rostova, Director of Operations), and the client was Nebula Dynamics Corp. (represented by Julian Vance, Chief Technology Officer).",
+    "category": "contract_parties",
+    "difficulty": "easy"
+  },
+  {
+    "query": "Why was Marcus Thorne awarded the Certificate of Achievement by Keystone Echo?",
+    "expected_answer": "Marcus Thorne received the Certificate of Achievement from Keystone Echo in recognition of outstanding performance and dedication during the Q4 Strategic Initiative Project.",
+    "category": "employee_award",
+    "difficulty": "easy"
+  },
+  {
+    "query": "What is the code of conduct for digital spaces at Keystone Echo?",
+    "expected_answer": "Harassment or discrimination in digital channels (Slack, Zoom, Email) is treated with the same severity as physical incidents. Video is encouraged but not mandatory during internal calls to reduce fatigue, but is mandatory for client calls. No meetings may be recorded without the verbal consent of all attendees.",
+    "category": "code_of_conduct",
+    "difficulty": "medium"
+  },
+  {
+    "query": "What is the annual paid time off (PTO) policy at Keystone Echo, and how does the accrual and carry-over system work for different tenure levels?",
+    "expected_answer": "Keystone Echo uses a tiered annual PTO accrual based on tenure. PTO covers vacation, personal business, and mental health days. Accrual and maximum carry-over are:\n\n0–2 years: 20 days per year; up to 5 days may carry over\n2–5 years: 25 days per year; up to 10 days may carry over\n5+ years: 30 days per year; up to 15 days may carry over",
+    "category": "pto_policy",
+    "difficulty": "easy"
+  },
+  {
+    "query": "Who received the Summit Atlas Safety Compliance Division certificate for Hazardous Materials Handling (Level 4), and what does the certification signify?",
+    "expected_answer": "Jaxon Merrick received the certificate for successfully completing the rigorous training program for Hazardous Materials Handling (Level 4) at Summit Atlas. The certification signifies exceptional knowledge in spill containment, emergency response protocols, and regulatory compliance under ISO 45001 standards.",
+    "category": "certificate_award",
+    "difficulty": "easy"
+  },
+  {
+    "query": "What is the Zero Harm Philosophy at Summit Atlas?",
+    "expected_answer": "At Summit Atlas, no deadline is more important than the safety of our people. We operate under a 'Stop Work Authority' rule: Any employee, regardless of rank, has the authority to stop an operation if they perceive an immediate safety risk.",
+    "category": "safety_policy",
+    "difficulty": "easy"
+  },
+	{
+		"query": "What is the travel policy for air travel at Summit Atlas?",
+		"expected_answer": "Domestic flights under 4 hours are Economy Class only. International flights over 4 hours allow Premium Economy. Executive travel over 8 hours permits Business Class for Director level and above.",
+		"category": "travel_policy",
+		"difficulty": "easy"
+	},
+  {
+	"query": "What was the compensation and grant for the research division of Nexus Crescent?",
+	"expected_answer": "The total estimated budget for the Study is $2,400,000 USD. Payments shall be made upon the completion of the following milestones: Milestone 1: IRB/Ethics Committee Approval (20%), Milestone 2: First Patient In (FPI) (30%), Milestone 3: Database Lock (50%).",
+	"category": "compensation_grant",
+	"difficulty": "medium"
+  },
+  {
+    "query": "What is the definition of IPs according to Nexus Crescent?",
+    "expected_answer": "'Intellectual Property' includes, but is not limited to: patentable inventions and discoveries, software code, algorithms, and models, laboratory notebooks and datasets, trade secrets and know-how.",
+    "category": "ip_definition",
+    "difficulty": "easy"
+  },
+  {
+    "query": "What are the emergency procedures at Nexus Crescent?",
+    "expected_answer": "For a chemical spill: 1. Alert personnel in the immediate area. 2. If volatile, activate the fume hood emergency purge. 3. Evacuate and call the Safety Officer (Ext. 911). For eye exposure: 1. Proceed immediately to the Eye Wash Station. 2. Flush eyes for a minimum of 15 minutes. 3. Hold eyelids open to ensure full irrigation. Safety is a condition of employment. Ignorance of protocols is not a defense.",
+    "category": "emergency_procedures",
+    "difficulty": "easy"
+  }
 ]

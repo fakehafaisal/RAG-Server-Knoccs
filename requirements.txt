@@ -39,7 +39,7 @@ python-dotenv==1.0.0
 pathlib2==2.3.7.post1
 
 # Evaluation & Metrics
-deepeval>=3.7.0
+deepeval>=3.8.0
 litellm>=1.80.0
 
 # Reranking

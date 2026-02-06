@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "WebSearch",
+      "WebFetch(domain:deepeval.com)",
+      "Bash(python -m py_compile:*)",
+      "Bash(python3 -m py_compile:*)",
+      "WebFetch(domain:pypi.org)",
+      "WebFetch(domain:docs.confident-ai.com)",
+      "Bash(python:*)",
+      "Bash(timeout 20 python3:*)",
+      "Bash(python3:*)"
+    ]
+  }
+}
