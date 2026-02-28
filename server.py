@@ -212,20 +212,24 @@ def query_rag(request: QueryRequest):
             conversation_history=request.conversation_history
         )
 
-        # Get sources if requested
+        # Get sources if requested (deduplicated by document)
         sources = None
         if request.return_sources:
             raw_results = rag_search.search_only(request.query, top_k=request.top_k)
-            sources = [
-                {
-                    "text": r.get("metadata", {}).get("text", ""),
-                    "source": r.get("metadata", {}).get("source", "unknown"),
-                    "document_name": r.get("metadata", {}).get("document_name", "unknown"),
-                    "document_type": r.get("metadata", {}).get("document_type", "unknown"),
-                    "chunk_id": r.get("chunk_id"),
-                    "rerank_score": r.get("rerank_score")
-                } for r in raw_results
-            ]
+            seen_sources = {}
+            for r in raw_results:
+                source_key = r.get("metadata", {}).get("source", "unknown")
+                score = r.get("rerank_score") or 0
+                if source_key not in seen_sources or score > (seen_sources[source_key].get("rerank_score") or 0):
+                    seen_sources[source_key] = {
+                        "text": r.get("metadata", {}).get("text", ""),
+                        "source": source_key,
+                        "document_name": r.get("metadata", {}).get("document_name", "unknown"),
+                        "document_type": r.get("metadata", {}).get("document_type", "unknown"),
+                        "chunk_id": r.get("chunk_id"),
+                        "rerank_score": r.get("rerank_score")
+                    }
+            sources = list(seen_sources.values())
 
         return QueryResponse(
             answer=answer,
