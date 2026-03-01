@@ -1,17 +1,55 @@
-[
-  {
-    "query": "What is Pulse Unity's main business focus?"
-  },
-  {
-    "query": "What is BeaconPioneer's domain?"
-  },
-  {
-    "query": "Does Atlas Unity have an HR policy document?"
-  },
-  {
-    "query": "What are the key terms of the Pulse Unity Client Service Agreement?"
-  },
-  {
-    "query": "What is the leave and attendance policy of Atlas Unity?"
-  }
-]
+{
+  "queries": [
+    "What is BeaconPioneer's domain?",
+    "Does Atlas Unity have an HR policy document?",
+    "What are the key terms of the Pulse Unity Client Service Agreement?",
+    "What is the leave and attendance policy of Atlas Unity?",
+    "What are the primary concerns Peak Iron is experiencing with their systems?",
+    "Which company does Heidi Smith work at?",
+    "What types of support issues are Atlas Unity experiencing?",
+    "What security incidents has Vantage Nexus reported?",
+    "What is the eligibility criteria for remote work at Keystone Echo?",
+    "What is the main business focus of Beacon Pioneer?",
+    "What are the benefit eligibility requirements for Beacon Pioneer employees?",
+    "What is the governing law specified in Beacon Pioneer's NDA?",
+    "What did Ray Brown request confirmation about in the Beacon Pioneer conversation on November 21?",
+    "What billing issue did Beacon Pioneer report regarding payment accuracy?",
+    "What are the attendance requirements for employees at Atlas Unity?",
+    "What behaviors are prohibited for employees at Atlas Unity according to the Human Resources Policy?",
+    "What are Atlas Unity's sustainability goals for 2026?",
+    "What support issue did Atlas Unity report regarding their investment optimization platform?",
+    "Why did Atlas Unity ask for integration support for their project management tools?",
+    "Why did Arthur P. Carbon receive the Certificate of Excellence at Peak Iron in 2025?",
+    "What is the annual leave entitlement for permanent employees at Peak Iron based on years of service?",
+    "When was the latest Peak Iron memo dated?",
+    "What issue caused the SaaS platform outage at Peak Iron in October 2025?",
+    "What was the response to the email 'Request for Investigation of Potential Security Breach in Hospital Systems' from Peak Iron?",
+    "What are the scope of services defined in Iron Harbor's Client Agreement folder?",
+    "What are the core values of Iron Harbor?",
+    "What is the policy on professional behavior that every employee at Iron Harbor must adhere to?",
+    "What was the proposed response to the security breach at Iron Harbor in October 2025?",
+    "Which tools did Iron Harbor request for brand support according to the RAG?",
+    "What are the core domains Unity Pioneer works on?",
+    "What are the workplace conduct expectations for employees?",
+    "What is the scope of recognition for the holder of the certificate at Unity Pioneer?",
+    "What was the Hospital Systems Security Features Inquiry Email about that Unity Pioneer sent?",
+    "What were the key performance indicators for Pulse Unity in 2024?",
+    "How much did Pulse Unity invest in R&D activities in 2024 and in which domains?",
+    "What are the goals of Pulse Unity's major geographic expansion initiatives in 2025?",
+    "What does Pulse Unity cover in travel reimbursement for required in-person attendance?",
+    "Which advanced training certificate did Sophia Chen receive from Vantage Nexus Academy, and in what field?",
+    "What are the data security requirements for remote employees at Vantage Nexus?",
+    "What are the key sector trends highlighted in the Market Horizon Report by Vantage Nexus?",
+    "Who were the provider and client parties in the Master Services Agreement for Keystone Echo?",
+    "Why was Marcus Thorne awarded the Certificate of Achievement by Keystone Echo?",
+    "What is the code of conduct for digital spaces at Keystone Echo?",
+    "What is the annual paid time off (PTO) policy at Keystone Echo, and how does the accrual and carry-over system work for different tenure levels?",
+    "Who received the Summit Atlas Safety Compliance Division certificate for Hazardous Materials Handling (Level 4), and what does the certification signify?",
+    "What is the Zero Harm Philosophy at Summit Atlas?",
+    "What is the travel policy for air travel at Summit Atlas?",
+    "What was the compensation and grant for the research division of Nexus Crescent?",
+    "What is the definition of IPs according to Nexus Crescent?",
+    "What are the emergency procedures at Nexus Crescent?"
+  ],
+  "topK": 10
+}
