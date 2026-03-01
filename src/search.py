@@ -207,6 +207,7 @@ class RAGSearch:
 
         # Load companies map once on initialization
         self.company_map = load_companies_map()
+        self.id_to_name = {cid: name for name, cid in self.company_map.items() if name[0].isupper()}
 
         logger.info(f"LLM initialized: {llm_model}")
         logger.info(f"Loaded {len(self.company_map)} companies for extraction")
@@ -240,6 +241,8 @@ class RAGSearch:
             return "Please ask a question.", conversation_history
 
         # Step 0: Extract company from query if not provided
+        company_name = None
+
         if company_id is None:
             company_id, company_name = extract_company_from_query(query, self.company_map)
 
@@ -271,6 +274,10 @@ class RAGSearch:
 
             if self.debug:
                 logger.debug(f"Extracted company: {company_name} (ID: {company_id})")
+
+        # Resolve company name if company_id was pre-provided
+        if company_name is None:
+            company_name = self.id_to_name.get(company_id, "this client")
 
         # Step 1: Manage conversation history
         conversation_context, summary_text = self._manage_conversation_history(conversation_history)
@@ -332,7 +339,7 @@ class RAGSearch:
             context = "\n\n".join(context_parts)
 
             # Step 5: Generate response
-            prompt = f"""You are Knoccs AI Assistant, helping staff find information from client documents, agreements, and communications.
+            prompt = f"""You are Knoccs AI Assistant, helping staff find information about **{company_name}** from their documents, agreements, and communications.
 
 **Guidelines:**
 - Answer based strictly on the provided documents for this client's knowledge base
@@ -342,6 +349,7 @@ class RAGSearch:
 - Write naturally as if you're an internal knowledge assistant familiar with this client's business
 - Present information clearly and professionally for business use
 - If multiple documents contain relevant information, synthesize them coherently into a single answer
+- Format your response using Markdown (use headers, bullet points, bold, tables, etc. where appropriate to improve readability)
 - Be consistent with previous conversation context when relevant
 - Maintain strict data isolation: only reference information from the current client's knowledge base
 - Do not acknowledge or reference other clients' data or knowledge bases
